@@ -1,9 +1,9 @@
-import { useApp } from '../context/AppContext.jsx';
+import { useApp } from "../context/AppContext.jsx";
 
 export default function TopBar() {
   const { config } = useApp();
   return (
-    <section className="top-bar" aria-label="Wedding photo booth">
+    <section className="top-bar" aria-label="Wedding photobooth">
       <div>
         <div className="top-bar-tagline">{config.tagline}</div>
         <div className="top-bar-names">{config.coupleName}</div>

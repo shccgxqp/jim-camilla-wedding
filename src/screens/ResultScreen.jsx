@@ -89,6 +89,7 @@ export default function ResultScreen({ onShootAgain, onBackToLayouts }) {
   const gifModes = resultData?.gifModes;
   const isVideo = Boolean(resultData?.isVideo);
   const filename = resultData?.filename || "";
+  const uploadError = resultData?.uploadError || null;
 
   const coupleNames = (config?.coupleName || "jim & camilla").toUpperCase();
   const weddingDate = (config?.weddingDate || "2026.11.07").replace(/\./g, ".");
@@ -215,7 +216,7 @@ export default function ResultScreen({ onShootAgain, onBackToLayouts }) {
                 maxWidth: "100%",
                 width: "auto",
                 height: "auto",
-                margin: "0 auto",
+                margin: "30px auto",
                 borderRadius: 8,
                 boxShadow: "0 36px 70px -28px rgba(0,0,0,0.82)",
               }}
@@ -236,6 +237,26 @@ export default function ResultScreen({ onShootAgain, onBackToLayouts }) {
             </div>
           ) : null}
         </div>
+
+        {/* ── Upload error banner ── */}
+        {uploadError && (
+          <div style={{
+            margin: '0 auto 0.75rem',
+            maxWidth: 400,
+            background: 'rgba(224,88,75,0.15)',
+            border: '1px solid rgba(224,88,75,0.5)',
+            borderRadius: 8,
+            padding: '0.5rem 0.9rem',
+            color: '#E4C97E',
+            fontSize: '0.78rem',
+            textAlign: 'center',
+            lineHeight: 1.5,
+          }}>
+            上傳失敗，QR Code 無法使用。照片已在裝置上可儲存。
+            <br />
+            <span style={{ opacity: 0.55, fontFamily: 'monospace' }}>{uploadError}</span>
+          </div>
+        )}
 
         {/* ── Bottom row ── */}
         <div className="result-bottom-row">
@@ -274,7 +295,7 @@ export default function ResultScreen({ onShootAgain, onBackToLayouts }) {
               type="button"
               onClick={onBackToLayouts}
             >
-              回 首 頁 重 選
+              回 首 頁
             </button>
           </div>
         </div>

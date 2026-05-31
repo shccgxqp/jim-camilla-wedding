@@ -99,6 +99,11 @@ export async function runCountdown(seconds, onTick) {
 }
 
 export function captureFrame(videoEl, workCanvas, activeLayout, filterId) {
+  if (!videoEl || videoEl.videoWidth === 0 || videoEl.readyState < 2) {
+    throw new Error('相機尚未就緒（videoWidth=0 / readyState=' + (videoEl?.readyState ?? 'null') + '）');
+  }
+  if (!workCanvas) throw new Error('workCanvas 元素不存在');
+
   const shotRatio = activeLayout?.shotRatio || '4/3';
   const [rw, rh] = shotRatio.split('/').map(Number);
   const captureW = rw >= rh ? 1200 : Math.round(1200 * rw / rh);

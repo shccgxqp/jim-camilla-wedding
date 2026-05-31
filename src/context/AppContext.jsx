@@ -24,6 +24,7 @@ export function AppProvider({ children }) {
   const [busy, setBusy] = useState(false);
   const [screen, setScreen] = useState(restoreScreen);
   const [resultData, setResultData] = useState(null);
+  const [errorInfo, setErrorInfo] = useState(null);
   const [backgrounds, setBackgrounds] = useState([]);
   const streamRef = useRef(null);
 
@@ -42,6 +43,7 @@ export function AppProvider({ children }) {
       busy, setBusy,
       screen, setScreen,
       resultData, setResultData,
+      errorInfo, setErrorInfo,
       backgrounds, setBackgrounds,
       streamRef,
       layouts,

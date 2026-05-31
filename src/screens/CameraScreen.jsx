@@ -8,6 +8,7 @@ import { ZONES as F01_ZONES } from '../frames/frame01.js';
 import { ZONES as F02_ZONES } from '../frames/frame02.js';
 import { ZONES as F03_ZONES } from '../frames/frame03.js';
 import { ZONES as F04_ZONES } from '../frames/frame04.js';
+import { ZONES as F05_ZONES } from '../frames/frame05.js';
 import { startClipRecorder, encodeClipGif, startClipRecorderHQ, encodeFramesAsJpegs, RECORD_MS } from '../gif.js';
 import { uploadClipGif, requestGifCompose, uploadJpegFrame, requestGifComposeJpeg } from '../upload.js';
 import { startVideoClipRecorder, composeMultiZoneVideo, VIDEO_DURATION_MS, getBestVideoMime, isIgCompatible } from '../video.js';
@@ -17,6 +18,7 @@ const FRAME_GUIDE = {
   frame02: { zones: F02_ZONES, w: 784,  h: 1176, url: '/frames/frame02.png' },
   frame03: { zones: F03_ZONES, w: 858,  h: 2532, url: '/frames/frame03.png' },
   frame04: { zones: F04_ZONES, w: 2090, h: 3135, url: '/frames/frame04.png' },
+  frame05: { zones: F05_ZONES, w: 960,  h: 1707, url: '/frames/frame05.png' },
 };
 
 export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposing, onVideoReady, onVideoComposing, onBackToLayouts }) {
@@ -110,7 +112,8 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
       onAllShotsTaken(currentShots);
     } catch (err) {
       console.error('Capture error:', err);
-      setStatus('拍攝失敗，請重試。');
+      const shotNum = currentShots.length + 1;
+      setStatus(`第 ${shotNum} 張失敗：${err.message || '未知錯誤'}。請重試。`);
     } finally {
       setBusy(false);
     }

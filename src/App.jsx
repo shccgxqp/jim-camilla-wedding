@@ -8,6 +8,7 @@ import LayoutScreen from './screens/LayoutScreen.jsx';
 import CameraScreen from './screens/CameraScreen.jsx';
 import LoadingScreen from './screens/LoadingScreen.jsx';
 import ResultScreen from './screens/ResultScreen.jsx';
+import ErrorScreen from './screens/ErrorScreen.jsx';
 import FilterEditorScreen from './screens/FilterEditorScreen.jsx';
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
     screen, setScreen,
     setResultData,
     setBusy,
+    setErrorInfo,
     streamRef,
     layouts,
     setBackgrounds,
@@ -71,23 +73,31 @@ export default function App() {
     const workCanvas = document.querySelector('#workCanvas');
     stopCamera(streamRef);
     setScreen('loading');
+    setErrorInfo(null);
 
+    let blob;
     try {
-      const blob = await composePhoto(workCanvas, activeLayout, capturedShots);
-      const blobUrl = URL.createObjectURL(blob);
-
-      try {
-        const result = await uploadPhoto(blob, activeLayout.id);
-        setResultData({ blobUrl, downloadUrl: result.downloadUrl, filename: result.filename });
-      } catch (uploadErr) {
-        console.error('Upload failed:', uploadErr);
-        setResultData({ blobUrl, downloadUrl: null, filename: null });
-      }
+      blob = await composePhoto(workCanvas, activeLayout, capturedShots);
+      if (!blob) throw new Error('Canvas toBlob 回傳 null（記憶體不足？）');
     } catch (err) {
       console.error('Compose failed:', err);
-      setResultData({ blobUrl: null, downloadUrl: null, filename: null });
+      setErrorInfo({
+        phase: '照片合成失敗',
+        message: err.message || String(err),
+        retryScreen: 'camera',
+      });
+      setScreen('error');
+      return;
     }
 
+    const blobUrl = URL.createObjectURL(blob);
+    try {
+      const result = await uploadPhoto(blob, activeLayout.id);
+      setResultData({ blobUrl, downloadUrl: result.downloadUrl, filename: result.filename });
+    } catch (uploadErr) {
+      console.error('Upload failed:', uploadErr);
+      setResultData({ blobUrl, downloadUrl: null, filename: null, uploadError: uploadErr.message || '上傳失敗' });
+    }
     setScreen('result');
   }
 
@@ -139,6 +149,13 @@ export default function App() {
     setScreen('result');
   }
 
+  function handleRetryAfterError() {
+    setErrorInfo(null);
+    setBusy(false);
+    setShots([]);
+    setScreen('camera');
+  }
+
   function handleShootAgain() {
     setBusy(false);
     setShots([]);
@@ -168,6 +185,12 @@ export default function App() {
         />
       )}
       {screen === 'loading' && <LoadingScreen />}
+      {screen === 'error' && (
+        <ErrorScreen
+          onRetry={handleRetryAfterError}
+          onBackToLayouts={handleBackToLayouts}
+        />
+      )}
       {screen === 'result' && (
         <ResultScreen
           onShootAgain={handleShootAgain}
