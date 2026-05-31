@@ -987,7 +987,6 @@ h2 {
 
 video {
   @apply absolute inset-0 w-full h-full object-cover;
-  transform: scaleX(-1);
 }
 
 .camera-heart-guide {

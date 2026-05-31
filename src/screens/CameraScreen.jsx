@@ -107,6 +107,11 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
         await triggerFlash(flashRef.current);
         if (currentShots.length < required) {
           await wait(1200);
+          // iPad Safari: canvas drawImage can trigger stream resolution drift — re-sync video
+          if (videoRef.current && streamRef.current) {
+            videoRef.current.srcObject = streamRef.current;
+            try { await videoRef.current.play(); } catch (_) {}
+          }
         }
       }
       onAllShotsTaken(currentShots);
@@ -403,7 +408,13 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
               ref={previewRef}
               style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)' }}
             >
-              <video ref={videoRef} autoPlay playsInline muted />
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
+              />
               {heartGuideStyle && (
                 <div className="camera-heart-guide" style={heartGuideStyle} aria-hidden="true" />
               )}
