@@ -2,7 +2,7 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const { execFile } = require("node:child_process");
+const { execFile, spawn } = require("node:child_process");
 const { promisify } = require("node:util");
 const execFileAsync = promisify(execFile);
 const { PNG } = require("pngjs");
@@ -754,6 +754,55 @@ async function handleGifClipUpload(req, res) {
   sendJson(res, 200, { ok: true });
 }
 
+// Encode RGBA frames to GIF via ffmpeg palettegen/paletteuse.
+// Native encode is ~10x faster than pure-JS NeuQuant; sierra2_4a dithering
+// avoids the face color-banding that made gifenc unusable.
+function encodeGifFfmpeg(frames, w, h, fps) {
+  return new Promise((resolve, reject) => {
+    const tmpOut = path.join(
+      uploadsDir,
+      `tmp_gif_${crypto.randomBytes(6).toString("hex")}.gif`,
+    );
+    const proc = spawn(
+      "ffmpeg",
+      [
+        "-f", "rawvideo",
+        "-pix_fmt", "rgba",
+        "-s", `${w}x${h}`,
+        "-r", String(fps),
+        "-i", "pipe:0",
+        "-filter_complex",
+        "split[a][b];[a]palettegen=max_colors=256:stats_mode=diff[p];[b][p]paletteuse=dither=sierra2_4a",
+        "-loop", "0",
+        "-y", tmpOut,
+      ],
+      { stdio: ["pipe", "ignore", "pipe"] },
+    );
+    let stderr = "";
+    proc.stderr.on("data", (d) => { stderr += d; });
+    proc.on("error", reject); // ffmpeg not installed
+    proc.on("close", (code) => {
+      if (code !== 0) {
+        fs.unlink(tmpOut, () => {});
+        reject(new Error(`ffmpeg exit ${code}: ${stderr.slice(-300)}`));
+        return;
+      }
+      try {
+        const buf = fs.readFileSync(tmpOut);
+        fs.unlinkSync(tmpOut);
+        resolve(buf);
+      } catch (err) {
+        reject(err);
+      }
+    });
+    proc.stdin.on("error", () => {}); // EPIPE if ffmpeg dies early — close handler reports
+    for (const f of frames) {
+      proc.stdin.write(Buffer.from(f.buffer, f.byteOffset, f.byteLength));
+    }
+    proc.stdin.end();
+  });
+}
+
 // Compose 3 GIF variants from JPEG frames uploaded by HQ mode
 async function composeGifFromJpegFrames(
   sessionId,
@@ -895,8 +944,15 @@ async function composeGifFromJpegFrames(
       gifFrames.push(frame);
     }
 
-    let gifBuffer;
-    if (useGifenc) {
+    let gifBuffer = null;
+    try {
+      gifBuffer = await encodeGifFfmpeg(gifFrames, gifW, gifH, fps);
+    } catch (err) {
+      console.warn("[gif] ffmpeg encode unavailable, using JS encoder:", err.message);
+    }
+    if (gifBuffer) {
+      // done — native path
+    } else if (useGifenc) {
       // gifenc: Wu color quantization — better palette than NeuQuant, especially for photos
       const enc = GifencEncoder();
       for (let f = 0; f < gifFrames.length; f++) {

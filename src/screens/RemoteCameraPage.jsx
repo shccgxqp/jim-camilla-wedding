@@ -16,6 +16,7 @@ export default function RemoteCameraPage() {
   const flashRef = useRef(null);
   const wsRef = useRef(null);
   const pcRef = useRef(null);
+  const dcRef = useRef(null);
   const streamRef = useRef(null);
   const wakeLockRef = useRef(null);
   const boothOnlineRef = useRef(false);
@@ -30,6 +31,7 @@ export default function RemoteCameraPage() {
   );
   const [codeInput, setCodeInput] = useState('');
   const [pairError, setPairError] = useState('');
+  const [wakeLockOk, setWakeLockOk] = useState(true);
 
   useEffect(() => {
     if (!pairCode) return; // wait for code entry
@@ -48,6 +50,7 @@ export default function RemoteCameraPage() {
         try { pcRef.current.close(); } catch {}
         pcRef.current = null;
       }
+      dcRef.current = null;
     }
 
     function stopStream() {
@@ -59,8 +62,17 @@ export default function RemoteCameraPage() {
 
     async function requestWakeLock() {
       try {
-        wakeLockRef.current = await navigator.wakeLock?.request('screen');
-      } catch {}
+        if (!navigator.wakeLock) { setWakeLockOk(false); return; }
+        wakeLockRef.current = await navigator.wakeLock.request('screen');
+        setWakeLockOk(true);
+        // iOS releases the lock when page is backgrounded — flag it so the
+        // banner reappears if re-acquire on return fails
+        wakeLockRef.current.addEventListener?.('release', () => {
+          if (!closed && document.visibilityState === 'visible') setWakeLockOk(false);
+        });
+      } catch {
+        setWakeLockOk(false);
+      }
     }
 
     // Acquire (or re-acquire) the camera. Returns true on success.
@@ -110,6 +122,8 @@ export default function RemoteCameraPage() {
       teardownPc();
       const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
       pcRef.current = pc;
+      // P2P channel for capture transfer — skips WS+server relay
+      dcRef.current = pc.createDataChannel('capture');
       streamRef.current.getTracks().forEach((t) => pc.addTrack(t, streamRef.current));
       pc.onicecandidate = (ev) => {
         if (ev.candidate) sendJson({ type: 'signal', data: { kind: 'ice', candidate: ev.candidate } });
@@ -127,13 +141,28 @@ export default function RemoteCameraPage() {
       sendJson({ type: 'signal', data: { kind: 'offer', sdp: pc.localDescription } });
     }
 
+    // Send capture result over DataChannel (P2P, chunked) with WS fallback
+    function sendCaptured(shotNum, dataUrl) {
+      const dc = dcRef.current;
+      if (dc && dc.readyState === 'open') {
+        const CHUNK = 60000; // stay well under Safari's DC message size limit
+        dc.send(JSON.stringify({ t: 'cap-start', shotNum }));
+        for (let i = 0; i < dataUrl.length; i += CHUNK) {
+          dc.send(JSON.stringify({ t: 'cap-chunk', shotNum, d: dataUrl.slice(i, i + CHUNK) }));
+        }
+        dc.send(JSON.stringify({ t: 'cap-end', shotNum }));
+      } else {
+        sendJson({ type: 'captured', shotNum, dataUrl });
+      }
+    }
+
     function handleCaptureCmd(msg) {
       const v = videoRef.current;
       const c = canvasRef.current;
       try {
         const fakeLayout = { id: msg.layoutId || 'remote', shotRatio: msg.shotRatio || '3/4' };
         const dataUrl = captureFrame(v, c, fakeLayout, msg.filterId, msg.shotNum, '3:4', 'jpeg');
-        sendJson({ type: 'captured', shotNum: msg.shotNum, dataUrl });
+        sendCaptured(msg.shotNum, dataUrl);
         setShotsTaken((n) => n + 1);
         const f = flashRef.current;
         if (f) {
@@ -321,6 +350,19 @@ export default function RemoteCameraPage() {
           }} />
           {status}
         </div>
+
+        {/* Wake lock unavailable — screen will auto-lock and kill the camera */}
+        {!wakeLockOk && (
+          <div style={{
+            position: 'absolute', top: 'calc(max(16px, env(safe-area-inset-top)) + 52px)',
+            left: '50%', transform: 'translateX(-50%)',
+            width: 'min(340px, 88%)', padding: '10px 16px', borderRadius: 12,
+            background: 'rgba(224,88,75,0.92)', color: '#fff',
+            fontSize: 13.5, lineHeight: 1.6, fontWeight: 600, textAlign: 'center',
+          }}>
+            ⚠️ 無法保持螢幕常亮。請到 設定 → 螢幕顯示與亮度 → 自動鎖定 改為「永不」，否則鎖屏會中斷相機。
+          </div>
+        )}
 
         {/* Manual restart — needed when iOS requires a user gesture to re-open camera */}
         {(camDead || !linked) && (

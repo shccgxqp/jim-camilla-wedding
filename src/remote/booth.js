@@ -27,10 +27,12 @@ function getPairCode() {
 function createBooth() {
   let ws = null;
   let pc = null;
+  let dc = null; // DataChannel from camera — captures transfer P2P, skipping the server
   let closed = false;
   let reconnectTimer = null;
   let pingTimer = null;
   let pongDeadline = null;
+  const dcBuffers = new Map(); // shotNum -> base64 chunks
 
   const api = {
     status: 'disconnected', // disconnected | waiting | connected
@@ -75,7 +77,33 @@ function createBooth() {
       try { pc.close(); } catch {}
       pc = null;
     }
+    dc = null;
+    dcBuffers.clear();
     api.stream = null;
+  }
+
+  function resolveCapture(shotNum, payload) {
+    const p = pendingCaptures.get(shotNum);
+    if (!p) return;
+    clearTimeout(p.timer);
+    pendingCaptures.delete(shotNum);
+    if (payload.error) p.reject(new Error(payload.error));
+    else p.resolve(payload);
+  }
+
+  function handleDcMessage(data) {
+    if (typeof data !== 'string') return;
+    let msg;
+    try { msg = JSON.parse(data); } catch { return; }
+    if (msg.t === 'cap-start') {
+      dcBuffers.set(msg.shotNum, []);
+    } else if (msg.t === 'cap-chunk') {
+      dcBuffers.get(msg.shotNum)?.push(msg.d);
+    } else if (msg.t === 'cap-end') {
+      const parts = dcBuffers.get(msg.shotNum);
+      dcBuffers.delete(msg.shotNum);
+      if (parts) resolveCapture(msg.shotNum, { shotNum: msg.shotNum, dataUrl: parts.join('') });
+    }
   }
 
   function connect() {
@@ -108,13 +136,8 @@ function createBooth() {
       } else if (msg.type === 'signal') {
         await handleSignal(msg.data);
       } else if (msg.type === 'captured') {
-        const p = pendingCaptures.get(msg.shotNum);
-        if (p) {
-          clearTimeout(p.timer);
-          pendingCaptures.delete(msg.shotNum);
-          if (msg.error) p.reject(new Error(msg.error));
-          else p.resolve(msg);
-        }
+        // WS fallback path (also carries error responses)
+        resolveCapture(msg.shotNum, msg);
       }
       // peer-joined: camera initiates the offer; nothing to do here
     };
@@ -142,6 +165,10 @@ function createBooth() {
     if (data.kind === 'offer') {
       teardownPc();
       pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+      pc.ondatachannel = (ev) => {
+        dc = ev.channel;
+        dc.onmessage = (e) => handleDcMessage(e.data);
+      };
       pc.ontrack = (ev) => {
         api.stream = ev.streams[0];
         streamListeners.forEach((f) => f(api.stream));
