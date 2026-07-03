@@ -129,13 +129,19 @@ export default function App() {
   function handleGifTaken(result) {
     setBusy(false);
     if (result.gifModes) {
-      const best = result.gifModes.opt || result.gifModes.high || result.gifModes.med || result.gifModes.low;
-      const modeCount = Object.keys(result.gifModes).length;
+      // mp4 = IG-story variant, not a GIF quality mode — keep it out of the compare UI
+      const { mp4, ...modes } = result.gifModes;
+      const best = modes.opt || modes.high || modes.med || modes.low;
+      const modeCount = Object.keys(modes).length;
+      // QR should hand guests the MP4 (/view page has save-to-photos flow) —
+      // an animated GIF posts as a static image on IG Stories.
+      const mp4ViewUrl = mp4 ? `${window.location.origin}/view/${mp4.token}` : null;
       setResultData({
         blobUrl: best?.downloadUrl || null,
-        downloadUrl: best?.downloadUrl || null,
+        downloadUrl: mp4ViewUrl || best?.downloadUrl || null,
         filename: best?.filename || null,
-        gifModes: modeCount > 1 ? result.gifModes : undefined,
+        gifModes: modeCount > 1 ? modes : undefined,
+        gifUrl: mp4ViewUrl ? best?.downloadUrl || null : null,
       });
     } else if (result.downloadUrl) {
       // handleGifCapture (non-HQ) path

@@ -803,6 +803,61 @@ function encodeGifFfmpeg(frames, w, h, fps) {
   });
 }
 
+// Encode RGBA frames to a looped H.264 MP4 (IG Stories can't animate GIFs —
+// guests need a video file to post an animated story).
+function encodeMp4FromFrames(frames, w, h, fps, loops = 4) {
+  return new Promise((resolve, reject) => {
+    const tmpOut = path.join(
+      uploadsDir,
+      `tmp_mp4_${crypto.randomBytes(6).toString("hex")}.mp4`,
+    );
+    const proc = spawn(
+      "ffmpeg",
+      [
+        "-f", "rawvideo",
+        "-pix_fmt", "rgba",
+        "-s", `${w}x${h}`,
+        "-r", String(fps),
+        "-i", "pipe:0",
+        // h264 requires even dimensions
+        "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2",
+        "-c:v", "libx264",
+        "-profile:v", "baseline",
+        "-level", "3.1",
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
+        "-an",
+        "-y", tmpOut,
+      ],
+      { stdio: ["pipe", "ignore", "pipe"] },
+    );
+    let stderr = "";
+    proc.stderr.on("data", (d) => { stderr += d; });
+    proc.on("error", reject);
+    proc.on("close", (code) => {
+      if (code !== 0) {
+        fs.unlink(tmpOut, () => {});
+        reject(new Error(`ffmpeg exit ${code}: ${stderr.slice(-300)}`));
+        return;
+      }
+      try {
+        const buf = fs.readFileSync(tmpOut);
+        fs.unlinkSync(tmpOut);
+        resolve(buf);
+      } catch (err) {
+        reject(err);
+      }
+    });
+    proc.stdin.on("error", () => {});
+    for (let l = 0; l < loops; l++) {
+      for (const f of frames) {
+        proc.stdin.write(Buffer.from(f.buffer, f.byteOffset, f.byteLength));
+      }
+    }
+    proc.stdin.end();
+  });
+}
+
 // Compose 3 GIF variants from JPEG frames uploaded by HQ mode
 async function composeGifFromJpegFrames(
   sessionId,
@@ -870,6 +925,7 @@ async function composeGifFromJpegFrames(
   ];
 
   const results = {};
+  let mp4Src = null; // reuse the 'high' variant's composed frames for the IG MP4
 
   for (const {
     name,
@@ -982,6 +1038,28 @@ async function composeGifFromJpegFrames(
     const filename = `${date}_${safeLayoutName(layoutId)}_gif_${name}_${random}.gif`;
     fs.writeFileSync(path.join(uploadsDir, filename), gifBuffer);
     results[name] = { token: encryptFilename(filename), filename };
+
+    if (name === "high") mp4Src = { frames: gifFrames, w: gifW, h: gifH, fps };
+  }
+
+  // IG Stories variant: animated GIFs post as static images — provide MP4
+  if (mp4Src) {
+    try {
+      const mp4Buffer = await encodeMp4FromFrames(
+        mp4Src.frames,
+        mp4Src.w,
+        mp4Src.h,
+        mp4Src.fps,
+        4,
+      );
+      const date = new Date().toISOString().slice(0, 10);
+      const random = crypto.randomBytes(4).toString("hex");
+      const filename = `${date}_${safeLayoutName(layoutId)}_gif_story_${random}.mp4`;
+      fs.writeFileSync(path.join(uploadsDir, filename), mp4Buffer);
+      results.mp4 = { token: encryptFilename(filename), filename };
+    } catch (err) {
+      console.warn("[gif] MP4 story variant skipped:", err.message);
+    }
   }
 
   // Cleanup JPEG frame files

@@ -283,6 +283,17 @@ export default function ResultScreen({ onShootAgain, onBackToLayouts }) {
 
           {/* Action buttons */}
           <div className="result-actions">
+            {resultData?.gifUrl && (
+              <a
+                className="result-btn-outline"
+                href={resultData.gifUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={{ textDecoration: 'none', textAlign: 'center' }}
+              >
+                GIF 版下載
+              </a>
+            )}
             <button
               className="result-btn-primary"
               type="button"
