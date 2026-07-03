@@ -133,15 +133,17 @@ export default function App() {
       const { mp4, ...modes } = result.gifModes;
       const best = modes.opt || modes.high || modes.med || modes.low;
       const modeCount = Object.keys(modes).length;
-      // QR should hand guests the MP4 (/view page has save-to-photos flow) —
-      // an animated GIF posts as a static image on IG Stories.
-      const mp4ViewUrl = mp4 ? `${window.location.origin}/view/${mp4.token}` : null;
+      // Booth is a display — the QR is the ONLY guest touchpoint. Point it at
+      // the /view page carrying BOTH files: MP4 (IG Stories can't animate
+      // GIFs) + companion GIF via ?gif=<token>.
+      const mp4ViewUrl = mp4
+        ? `${window.location.origin}/view/${mp4.token}${best?.token ? `?gif=${encodeURIComponent(best.token)}` : ''}`
+        : null;
       setResultData({
         blobUrl: best?.downloadUrl || null,
         downloadUrl: mp4ViewUrl || best?.downloadUrl || null,
         filename: best?.filename || null,
         gifModes: modeCount > 1 ? modes : undefined,
-        gifUrl: mp4ViewUrl ? best?.downloadUrl || null : null,
       });
     } else if (result.downloadUrl) {
       // handleGifCapture (non-HQ) path

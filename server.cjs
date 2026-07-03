@@ -176,8 +176,9 @@ function escHtml(s) {
     .replace(/'/g, "&#39;");
 }
 
-function buildViewPage({ filename, rawToken, isVideo, config }) {
+function buildViewPage({ filename, rawToken, isVideo, config, gifToken, gifFilename }) {
   const photoUrl = `/photos/${encodeURIComponent(rawToken)}`;
+  const gifUrl = gifToken ? `/photos/${encodeURIComponent(gifToken)}` : null;
   const safeFile = escHtml(filename);
   const safeName = escHtml(config.coupleName || "Jim & Camilla");
   const safeDate = escHtml(config.weddingDate || "");
@@ -240,6 +241,12 @@ body{background:radial-gradient(ellipse at 50% 35%,#241712 0%,#140d09 75%,#0a060
   border:1px solid rgba(228,201,126,.3);border-radius:999px;
   padding:11px 0;font-size:.88rem;color:#F4EAD6;cursor:pointer;
   width:100%;max-width:360px}
+.gif-btn{display:none;background:rgba(244,234,214,.08);
+  border:1.5px solid rgba(228,201,126,.45);border-radius:999px;
+  padding:13px 0;font-size:.95rem;font-weight:700;color:#E4C97E;cursor:pointer;
+  width:100%;max-width:360px;letter-spacing:.18em;
+  -webkit-tap-highlight-color:transparent}
+.gif-btn:disabled{opacity:.55;cursor:wait}
 </style>
 </head>
 <body>
@@ -255,6 +262,7 @@ body{background:radial-gradient(ellipse at 50% 35%,#241712 0%,#140d09 75%,#0a060
 <div class="media" id="mediaWrap">${mediaEl}</div>
 
 <button class="save-btn" id="saveBtn" style="display:none">${btnLabel}</button>
+${gifUrl ? `<button class="gif-btn" id="gifBtn">下載 GIF 動圖</button>` : ""}
 <button class="open-safari" id="safariBtn">在 Safari 中開啟</button>
 <p class="hint" id="hint" style="display:none">${hintText}</p>
 
@@ -276,6 +284,8 @@ body{background:radial-gradient(ellipse at 50% 35%,#241712 0%,#140d09 75%,#0a060
     mediaWrap.classList.add('ready');
     saveBtn.style.display = 'block';
     hint.style.display = 'block';
+    var gb = document.getElementById('gifBtn');
+    if (gb) gb.style.display = 'block';
   }
 
   function setProgress(pct) {
@@ -349,6 +359,36 @@ body{background:radial-gradient(ellipse at 50% 35%,#241712 0%,#140d09 75%,#0a060
     saveBtn.disabled = false;
     saveBtn.textContent = ${JSON.stringify(btnLabel)};
   });
+
+  var GIF_URL = ${JSON.stringify(gifUrl)};
+  var GIF_FILENAME = ${JSON.stringify(gifFilename || "photo.gif")};
+  var gifBtn = document.getElementById('gifBtn');
+  if (gifBtn && GIF_URL) {
+    gifBtn.addEventListener('click', async function(){
+      gifBtn.disabled = true;
+      gifBtn.textContent = '載入中...';
+      try {
+        var res  = await fetch(GIF_URL);
+        var blob = await res.blob();
+        var file = new File([blob], GIF_FILENAME, { type: 'image/gif' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: '${safeName} 婚禮 GIF' });
+        } else {
+          var a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = GIF_FILENAME;
+          a.click();
+        }
+      } catch(e) {
+        if (e.name !== 'AbortError') {
+          hint.textContent = '請在 Safari 中開啟此頁面再儲存。';
+          safBtn.style.display = 'block';
+        }
+      }
+      gifBtn.disabled = false;
+      gifBtn.textContent = '下載 GIF 動圖';
+    });
+  }
 })();
 </script>
 </body>
@@ -1332,11 +1372,17 @@ function route(req, res) {
     const ext = path.extname(filename).toLowerCase();
     const isVideo = ext === ".mp4" || ext === ".webm";
     const config = readConfig();
+    // Optional companion GIF (GIF captures: QR carries mp4 + ?gif=<token>)
+    const viewUrl = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+    const gifRaw = viewUrl.searchParams.get("gif") || "";
+    const gifFilename = gifRaw ? decryptToken(gifRaw) : null;
     const html = buildViewPage({
       filename: path.basename(filename),
       rawToken,
       isVideo,
       config,
+      gifToken: gifFilename ? gifRaw : null,
+      gifFilename: gifFilename ? path.basename(gifFilename) : null,
     });
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     res.end(html);
