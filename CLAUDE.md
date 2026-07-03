@@ -348,7 +348,10 @@ cmd = "node server.cjs"
 
 **效能優化**：
 - 拍照：flash 與 remote dataUrl 傳輸並行（拍完即閃，不等傳輸）
-- GIF：拍完立即進 loading（上傳背景跑）；frames batch 上傳（每格 1 請求，`/api/gif/frames-batch`，binary 格式 `[u32 count][u32 len][jpeg]...`）；GIF 輸出鎖 720px 寬（編碼快 5-9x）
+- 拍照傳輸走 WebRTC DataChannel P2P（60KB chunked，`cap-start/chunk/end` 協議），WS relay 為 fallback
+- GIF：拍完立即進 loading（上傳背景跑）；frames batch 上傳（每格 1 請求，`/api/gif/frames-batch`，binary 格式 `[u32 count][u32 len][jpeg]...`）；GIF 輸出鎖 720px 寬
+- GIF 編碼優先走 ffmpeg palettegen/paletteuse（rawvideo RGBA pipe stdin，sierra2_4a dither 解臉部色帶），無 ffmpeg 時 fallback JS 編碼器
+- iPhone 頁 wake lock 失敗/被釋放 → 紅色 banner 提示改自動鎖定
 - LoadingScreen 補上 `camera-screen-bg`（原白畫面）
 
 **限制**：iPhone 需 Auto-Lock 設「永不」。
