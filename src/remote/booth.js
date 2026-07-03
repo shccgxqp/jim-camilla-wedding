@@ -11,6 +11,19 @@ export function getBooth() {
   return instance;
 }
 
+// 4-char code, no ambiguous glyphs (0/O/1/I) — guests type it if QR fails
+function getPairCode() {
+  let code = localStorage.getItem('pb_pair_code');
+  if (!code || !/^[A-HJ-NP-Z2-9]{4}$/.test(code)) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    code = Array.from(crypto.getRandomValues(new Uint8Array(4)))
+      .map((b) => chars[b % chars.length])
+      .join('');
+    localStorage.setItem('pb_pair_code', code);
+  }
+  return code;
+}
+
 function createBooth() {
   let ws = null;
   let pc = null;
@@ -22,6 +35,7 @@ function createBooth() {
   const api = {
     status: 'disconnected', // disconnected | waiting | connected
     stream: null,
+    pairCode: getPairCode(),
     connect,
     disconnect,
     requestCapture,
@@ -70,7 +84,7 @@ function createBooth() {
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
     ws = new WebSocket(`${proto}://${location.host}/ws`);
     ws.onopen = () => {
-      sendJson({ type: 'hello', role: 'booth' });
+      sendJson({ type: 'hello', role: 'booth', pair: api.pairCode });
       setStatus('waiting');
       // App-level keepalive: detect zombie sockets (TCP half-open after network blip)
       clearInterval(pingTimer);

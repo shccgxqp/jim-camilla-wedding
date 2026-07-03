@@ -1291,6 +1291,8 @@ wss.on("connection", (ws) => {
     }
     if (msg.type === "hello") {
       role = msg.role === "booth" ? "booth" : "camera";
+      ws.pairCode =
+        typeof msg.pair === "string" ? msg.pair.slice(0, 16).toUpperCase() : "";
       if (role === "booth") {
         if (boothWs && boothWs !== ws) boothWs.close();
         boothWs = ws;
@@ -1299,8 +1301,15 @@ wss.on("connection", (ws) => {
         cameraWs = ws;
       }
       if (boothWs && cameraWs) {
-        wsSend(boothWs, { type: "peer-joined" });
-        wsSend(cameraWs, { type: "peer-joined" });
+        // Pair only when codes match — stops guests who open the camera URL
+        // from hijacking the booth's camera role.
+        if (boothWs.pairCode && boothWs.pairCode === cameraWs.pairCode) {
+          wsSend(boothWs, { type: "peer-joined" });
+          wsSend(cameraWs, { type: "peer-joined" });
+        } else {
+          wsSend(cameraWs, { type: "pair-rejected" });
+          cameraWs.close();
+        }
       }
       return;
     }

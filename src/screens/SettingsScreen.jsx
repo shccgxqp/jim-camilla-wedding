@@ -13,8 +13,16 @@ export default function SettingsScreen({ onBack }) {
   const { cameraSource, setCameraSource } = useApp();
   const [status, setStatus] = useState(getBooth().status);
   const [qrDataUrl, setQrDataUrl] = useState('');
+  const [showRaw, setShowRaw] = useState(() => localStorage.getItem('pb_show_raw') === '1');
 
-  const cameraUrl = `${location.origin}/photo-booth/camera`;
+  function toggleRaw() {
+    const next = !showRaw;
+    setShowRaw(next);
+    localStorage.setItem('pb_show_raw', next ? '1' : '0');
+  }
+
+  const pairCode = getBooth().pairCode;
+  const cameraUrl = `${location.origin}/photo-booth/camera?pair=${pairCode}`;
 
   useEffect(() => {
     const qr = qrcode(0, 'M');
@@ -115,7 +123,16 @@ export default function SettingsScreen({ onBack }) {
               {status !== 'connected' && (
                 <>
                   <div style={{ fontSize: 13.5, lineHeight: 1.7, opacity: 0.85, marginBottom: 14 }}>
-                    用 iPhone 掃描 QR code（或直接開啟網址），允許相機權限後自動配對：
+                    用 iPhone 掃描 QR code（或開啟網址後輸入配對碼），允許相機權限後自動配對：
+                  </div>
+                  <div style={{
+                    display: 'inline-block', marginBottom: 14, padding: '8px 20px',
+                    borderRadius: 10, background: 'rgba(228,201,126,0.14)',
+                    border: '1.5px solid rgba(228,201,126,0.5)',
+                    fontSize: 26, fontWeight: 800, letterSpacing: '0.35em',
+                    color: '#E4C97E', fontFamily: 'monospace',
+                  }}>
+                    {pairCode}
                   </div>
                   <div style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
                     {qrDataUrl && (
@@ -145,6 +162,14 @@ export default function SettingsScreen({ onBack }) {
               )}
             </div>
           )}
+
+          {/* Debug section */}
+          <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid rgba(228,201,126,0.2)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 13.5 }}>
+              <input type="checkbox" checked={showRaw} onChange={toggleRaw} style={{ width: 18, height: 18 }} />
+              顯示「RAW 測試」診斷版型（開發用，賓客模式請關閉）
+            </label>
+          </div>
         </div>
       </div>
     </section>

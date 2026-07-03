@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const FRAME_ORDER = ["frame05", "frame04", "frame03", "frame02", "frame01", "frame06"];
+const BASE_FRAME_ORDER = ["frame05", "frame04", "frame03", "frame02", "frame01"];
 
 const FRAME_META = {
   frame05: { en: "Fairy Tale", cn: "仙女雙格", ratio: 1920 / 3413 },
@@ -80,6 +80,10 @@ export default function LayoutScreen({ onSelectLayout, onOpenFilterEditor, onOpe
   const carouselRef = useRef(null);
   const [dims, setDims] = useState({ h: 480, w: 800 });
   const [idx, setIdx] = useState(0);
+  // frame06 = RAW diagnostic layout — only shown when debug enabled in settings
+  const FRAME_ORDER = localStorage.getItem('pb_show_raw') === '1'
+    ? [...BASE_FRAME_ORDER, 'frame06']
+    : BASE_FRAME_ORDER;
   const n = FRAME_ORDER.length;
 
   useEffect(() => {

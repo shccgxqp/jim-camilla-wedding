@@ -25,8 +25,14 @@ export default function RemoteCameraPage() {
   const [camDead, setCamDead] = useState(false);
   const [shotsTaken, setShotsTaken] = useState(0);
   const [restartKey, setRestartKey] = useState(0); // bump → full effect restart
+  const [pairCode, setPairCode] = useState(
+    () => (new URLSearchParams(location.search).get('pair') || '').toUpperCase().slice(0, 8)
+  );
+  const [codeInput, setCodeInput] = useState('');
+  const [pairError, setPairError] = useState('');
 
   useEffect(() => {
+    if (!pairCode) return; // wait for code entry
     let closed = false;
     let reconnectTimer = null;
     let pingTimer = null;
@@ -145,7 +151,7 @@ export default function RemoteCameraPage() {
       const ws = new WebSocket(`${proto}://${location.host}/ws`);
       wsRef.current = ws;
       ws.onopen = () => {
-        sendJson({ type: 'hello', role: 'camera' });
+        sendJson({ type: 'hello', role: 'camera', pair: pairCode });
         clearInterval(pingTimer);
         pongDeadline = null;
         pingTimer = setInterval(() => {
@@ -162,6 +168,11 @@ export default function RemoteCameraPage() {
         try { msg = JSON.parse(e.data); } catch { return; }
         if (msg.type === 'pong') {
           pongDeadline = null;
+        } else if (msg.type === 'pair-rejected') {
+          closed = true; // stop auto-reconnect — wrong code loops forever otherwise
+          setPairError('配對碼錯誤，請確認 iPad 設定頁顯示的代碼。');
+          setPairCode('');
+          setStatus('配對失敗');
         } else if (msg.type === 'peer-joined') {
           boothOnlineRef.current = true;
           setStatus('拍貼機已上線，建立視訊...');
@@ -223,7 +234,52 @@ export default function RemoteCameraPage() {
       stopStream();
       wakeLockRef.current?.release?.().catch(() => {});
     };
-  }, [restartKey]);
+  }, [restartKey, pairCode]);
+
+  // Pair-code entry — shown when URL has no ?pair= or the code was rejected
+  if (!pairCode) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, background: '#111',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        gap: 18, padding: 24, fontFamily: 'system-ui, sans-serif',
+      }}>
+        <div style={{ fontSize: 20, fontWeight: 700, color: '#F4EAD6' }}>輸入配對碼</div>
+        <div style={{ fontSize: 14, color: '#aaa', textAlign: 'center', lineHeight: 1.6 }}>
+          在 iPad 拍貼機的 ⚙️ 設定頁可以看到 4 位配對碼
+        </div>
+        {pairError && (
+          <div style={{ fontSize: 14, color: '#FF8A7A' }}>{pairError}</div>
+        )}
+        <input
+          value={codeInput}
+          onChange={(e) => setCodeInput(e.target.value.toUpperCase().replace(/[^A-Z2-9]/g, '').slice(0, 4))}
+          placeholder="ABCD"
+          autoCapitalize="characters"
+          autoComplete="off"
+          style={{
+            width: 200, padding: '14px 0', textAlign: 'center',
+            fontSize: 32, fontWeight: 800, letterSpacing: '0.35em', fontFamily: 'monospace',
+            background: 'rgba(255,255,255,0.08)', color: '#E4C97E',
+            border: '2px solid rgba(228,201,126,0.5)', borderRadius: 14, outline: 'none',
+          }}
+        />
+        <button
+          type="button"
+          disabled={codeInput.length !== 4}
+          onClick={() => { setPairError(''); setPairCode(codeInput); }}
+          style={{
+            padding: '14px 48px', borderRadius: 999, border: 'none',
+            background: codeInput.length === 4 ? '#E4C97E' : 'rgba(255,255,255,0.12)',
+            color: codeInput.length === 4 ? '#3A2B10' : '#777',
+            fontSize: 17, fontWeight: 800, cursor: codeInput.length === 4 ? 'pointer' : 'default',
+          }}
+        >
+          連 線
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{

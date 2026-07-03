@@ -18,7 +18,7 @@ export const layouts = {
     previewClass: "preview-frame05",
     width: 960,
     height: 1707,
-    shotRatio: "790/510",
+    shotRatio: "683/423",
     skipFrameSelect: true,
   },
   frame04: {

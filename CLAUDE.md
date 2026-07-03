@@ -357,20 +357,15 @@ cmd = "node server.cjs"
 
 ---
 
-### `frame05` 仙女雙格 — ⚠️ ZONES 待校準
+### `frame05` 仙女雙格 — ✅ ZONES 已校準（2026-07-03）
 
-**問題**：`src/frames/frame05.js` 的 ZONES 是目視估算，框格對位可能偏移。
+由 PNG alpha 分析（alpha<128 bounding box + 4px bleed）取得精確值：
+top `{144,168,683,423}`、bottom `{156,1008,643,402}`，shotRatio 更新為 `683/423`。
 
-**校準方法**：
-1. 選「仙女雙格」→ 拍照 → 看合成結果是否對齊
-2. 若偏移：瀏覽器 console 執行：
-   ```js
-   const img = new Image(); img.src='/frames/frame05.png';
-   img.onload = () => {
-     const c = document.createElement('canvas');
-     c.width=img.width; c.height=img.height;
-     c.getContext('2d').drawImage(img,0,0);
-     // getImageData 找 alpha>0 邊界
-   };
-   ```
-3. 更新 `src/frames/frame05.js` 的 ZONES（加約 4px bleed）
+---
+
+### 上線前安全（2026-07-03 完成）
+
+- **配對碼**：booth 產生 4 位碼（localStorage `pb_pair_code`，去除 0/O/1/I），hello 帶 `pair`，server 比對不符 → `pair-rejected` + 斷線。QR 帶 `?pair=CODE`；iPhone 無 code 時顯示輸入畫面。防賓客誤開 `/photo-booth/camera` 劫持鏡頭
+- **frame06 RAW 診斷框**：預設隱藏，settings debug checkbox（localStorage `pb_show_raw`）開啟才出現在版型選單
+- **UPLOAD_SECRET**：`.env` 已設定（gitignored）。部署新機器要重新生成
