@@ -3,6 +3,7 @@ import { OVERLAY_URL as F02_OVERLAY, ZONES as F02_ZONES } from './frames/frame02
 import { OVERLAY_URL as F03_OVERLAY, ZONES as F03_ZONES } from './frames/frame03.js';
 import { OVERLAY_URL as F04_OVERLAY, ZONES as F04_ZONES } from './frames/frame04.js';
 import { OVERLAY_URL as F05_OVERLAY, ZONES as F05_ZONES } from './frames/frame05.js';
+import { ZONES as F06_ZONES } from './frames/frame06.js';
 
 function drawCoverImage(ctx, source, x, y, width, height) {
   const srcW = source.videoWidth || source.naturalWidth || source.width;
@@ -37,6 +38,12 @@ async function composeFrame05(ctx, canvas, images) {
   });
   const overlay = await loadImage(F05_OVERLAY);
   ctx.drawImage(overlay, 0, 0, canvas.width, canvas.height);
+}
+
+function composeFrame06(ctx, canvas, images) {
+  // RAW diagnostic: single shot, fill entire canvas, no overlay
+  if (!images[0]) return;
+  drawCoverImage(ctx, images[0], 0, 0, canvas.width, canvas.height);
 }
 
 async function composeFrame04(ctx, canvas, images) {
@@ -81,7 +88,8 @@ export async function composePhoto(workCanvas, layout, shots) {
   const ctx = workCanvas.getContext('2d');
   const images = await Promise.all(shots.map(loadImage));
 
-  if (layout.id === 'frame05') await composeFrame05(ctx, workCanvas, images);
+  if (layout.id === 'frame06') composeFrame06(ctx, workCanvas, images);
+  else if (layout.id === 'frame05') await composeFrame05(ctx, workCanvas, images);
   else if (layout.id === 'frame04') await composeFrame04(ctx, workCanvas, images);
   else if (layout.id === 'frame03') await composeFrame03(ctx, workCanvas, images);
   else if (layout.id === 'frame02') await composeFrame02(ctx, workCanvas, images);

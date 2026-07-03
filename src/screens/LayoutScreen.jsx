@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const FRAME_ORDER = ["frame05", "frame04", "frame03", "frame02", "frame01"];
+const FRAME_ORDER = ["frame05", "frame04", "frame03", "frame02", "frame01", "frame06"];
 
 const FRAME_META = {
   frame05: { en: "Fairy Tale", cn: "仙女雙格", ratio: 1920 / 3413 },
@@ -8,6 +8,7 @@ const FRAME_META = {
   frame03: { en: "Dreamy", cn: "?????", ratio: 858 / 2532 },
   frame02: { en: "Cupid", cn: "弓箭神童", ratio: 784 / 1176 },
   frame01: { en: "Sweetheart", cn: "六心欣", ratio: 779 / 1172 },
+  frame06: { en: "RAW Test", cn: "原始測試", ratio: 1080 / 1440, noPreview: true },
 };
 
 function Sprig({ size = 22, color = "#BD9A4E", opacity = 0.7 }) {
@@ -75,7 +76,7 @@ function ArrowBtn({ dir, onClick }) {
   );
 }
 
-export default function LayoutScreen({ onSelectLayout, onOpenFilterEditor }) {
+export default function LayoutScreen({ onSelectLayout, onOpenFilterEditor, onOpenSettings }) {
   const carouselRef = useRef(null);
   const [dims, setDims] = useState({ h: 480, w: 800 });
   const [idx, setIdx] = useState(0);
@@ -125,6 +126,19 @@ export default function LayoutScreen({ onSelectLayout, onOpenFilterEditor }) {
             title="濾鏡調整"
           >
             🎨
+          </button>
+        )}
+
+        {/* Settings FAB */}
+        {onOpenSettings && (
+          <button
+            className="filter-editor-fab"
+            type="button"
+            onClick={onOpenSettings}
+            title="設定"
+            style={{ right: 72 }}
+          >
+            ⚙️
           </button>
         )}
 
@@ -204,17 +218,31 @@ export default function LayoutScreen({ onSelectLayout, onOpenFilterEditor }) {
                       : "drop-shadow(0 14px 26px rgba(0,0,0,0.55)) brightness(0.62) saturate(0.78)",
                   }}
                 >
-                  <img
-                    src={`/backgrounds/${id}background.png`}
-                    alt={meta.cn}
-                    style={{
-                      height: "100%",
-                      width: "100%",
-                      objectFit: "contain",
-                      display: "block",
-                    }}
-                    draggable={false}
-                  />
+                  {meta.noPreview ? (
+                    <div style={{
+                      height: "100%", width: "100%",
+                      background: "#111",
+                      display: "flex", flexDirection: "column",
+                      alignItems: "center", justifyContent: "center",
+                      gap: 8, borderRadius: 6,
+                    }}>
+                      <span style={{ fontSize: 32 }}>📷</span>
+                      <span style={{ color: "#E4C97E", fontSize: 13, letterSpacing: "0.1em" }}>RAW TEST</span>
+                      <span style={{ color: "#aaa", fontSize: 11 }}>原始測試</span>
+                    </div>
+                  ) : (
+                    <img
+                      src={`/backgrounds/${id}background.png`}
+                      alt={meta.cn}
+                      style={{
+                        height: "100%",
+                        width: "100%",
+                        objectFit: "contain",
+                        display: "block",
+                      }}
+                      draggable={false}
+                    />
+                  )}
                 </button>
               );
             })}

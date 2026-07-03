@@ -1,4 +1,15 @@
 export const layouts = {
+  frame06: {
+    id: "frame06",
+    name: "RAW 測試",
+    description: "原始攝像頭畫面，無邊框，診斷用。",
+    requiredShots: 1,
+    previewClass: "preview-frame06",
+    width: 1080,
+    height: 1440,
+    shotRatio: "1080/1440",
+    skipFrameSelect: true,
+  },
   frame05: {
     id: "frame05",
     name: "仙女雙格",

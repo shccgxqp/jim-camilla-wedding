@@ -36,6 +36,26 @@ export async function requestGifCompose(sessionId, layoutId, layoutW, layoutH, z
   return data;
 }
 
+// All frames of one clip in a single request:
+// [uint32BE frameCount] then per frame [uint32BE byteLength][jpeg bytes]
+export async function uploadJpegFrameBatch(jpegBlobs, sessionId, clipIdx) {
+  const head = new ArrayBuffer(4);
+  new DataView(head).setUint32(0, jpegBlobs.length);
+  const parts = [head];
+  for (const blob of jpegBlobs) {
+    const len = new ArrayBuffer(4);
+    new DataView(len).setUint32(0, blob.size);
+    parts.push(len, blob);
+  }
+  const params = new URLSearchParams({ session: sessionId, clip: clipIdx });
+  const response = await fetch(`/api/gif/frames-batch?${params}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/octet-stream' },
+    body: new Blob(parts),
+  });
+  if (!response.ok) throw new Error(`Batch upload failed: ${response.status}`);
+}
+
 export async function uploadJpegFrame(jpegBlob, sessionId, clipIdx, frameIdx) {
   const params = new URLSearchParams({ session: sessionId, clip: clipIdx, frame: frameIdx });
   const response = await fetch(`/api/gif/frame?${params}`, {

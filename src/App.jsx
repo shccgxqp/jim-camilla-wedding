@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import './app.css';
 import { useApp } from './context/AppContext.jsx';
 import { stopCamera } from './camera.js';
 import { composePhoto } from './compose.js';
@@ -10,6 +11,7 @@ import LoadingScreen from './screens/LoadingScreen.jsx';
 import ResultScreen from './screens/ResultScreen.jsx';
 import ErrorScreen from './screens/ErrorScreen.jsx';
 import FilterEditorScreen from './screens/FilterEditorScreen.jsx';
+import SettingsScreen from './screens/SettingsScreen.jsx';
 
 export default function App() {
   const {
@@ -169,10 +171,14 @@ export default function App() {
         <LayoutScreen
           onSelectLayout={handleSelectLayout}
           onOpenFilterEditor={() => setScreen('filter-editor')}
+          onOpenSettings={() => setScreen('settings')}
         />
       )}
       {screen === 'filter-editor' && (
         <FilterEditorScreen onBack={() => setScreen('layout')} />
+      )}
+      {screen === 'settings' && (
+        <SettingsScreen onBack={() => setScreen('layout')} />
       )}
       {screen === 'camera' && (
         <CameraScreen

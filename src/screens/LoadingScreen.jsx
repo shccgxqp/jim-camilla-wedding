@@ -38,6 +38,9 @@ export default function LoadingScreen() {
 
   return (
     <section className="stage">
+      <div className="camera-screen-bg">
+        <div className="camera-screen-overlay" />
+      </div>
       <div className="loading-panel">
         <div className="loading-spinner" />
         <h2>資料處理中</h2>

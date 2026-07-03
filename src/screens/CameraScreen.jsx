@@ -9,9 +9,12 @@ import { ZONES as F02_ZONES } from '../frames/frame02.js';
 import { ZONES as F03_ZONES } from '../frames/frame03.js';
 import { ZONES as F04_ZONES } from '../frames/frame04.js';
 import { ZONES as F05_ZONES } from '../frames/frame05.js';
+import { ZONES as F06_ZONES } from '../frames/frame06.js';
 import { startClipRecorder, encodeClipGif, startClipRecorderHQ, encodeFramesAsJpegs, RECORD_MS } from '../gif.js';
-import { uploadClipGif, requestGifCompose, uploadJpegFrame, requestGifComposeJpeg } from '../upload.js';
+import { uploadClipGif, requestGifCompose, uploadJpegFrameBatch, requestGifComposeJpeg } from '../upload.js';
 import { startVideoClipRecorder, composeMultiZoneVideo, VIDEO_DURATION_MS, getBestVideoMime, isIgCompatible } from '../video.js';
+import { filters } from '../data/constants.js';
+import { getBooth } from '../remote/booth.js';
 
 const FRAME_GUIDE = {
   frame01: { zones: F01_ZONES, w: 779,  h: 1172, url: '/frames/frame01.png' },
@@ -19,6 +22,7 @@ const FRAME_GUIDE = {
   frame03: { zones: F03_ZONES, w: 858,  h: 2532, url: '/frames/frame03.png' },
   frame04: { zones: F04_ZONES, w: 2090, h: 3135, url: '/frames/frame04.png' },
   frame05: { zones: F05_ZONES, w: 960,  h: 1707, url: '/frames/frame05.png' },
+  frame06: { zones: F06_ZONES, w: 1080, h: 1440, url: null },
 };
 
 export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposing, onVideoReady, onVideoComposing, onBackToLayouts }) {
@@ -31,25 +35,82 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
     busy, setBusy,
     streamRef,
     filters,
+    cameraSource,
   } = useApp();
+
+  const isRemote = cameraSource === 'remote';
 
   const videoRef = useRef(null);
   const flashRef = useRef(null);
   const wrapRef = useRef(null);
   const previewRef = useRef(null);
+  const canvasPreviewRef = useRef(null);
+  const rafRef = useRef(null);
+  const iPadRestartedRef = useRef(false);
 
   const [countdown, setCountdown] = useState(null);
   const [status, setStatus] = useState('看鏡頭，倒數後會自動拍下。');
   const [shotCount, setShotCount] = useState(0);
   const [previewPx, setPreviewPx] = useState(0);
+  const [camInfo, setCamInfo] = useState({});
+  const [captureLog, setCaptureLog] = useState([]);
+  const [captureMode, setCaptureMode] = useState('photo'); // 'photo' | 'video' | 'gif'
+  const [aspectRatio, setAspectRatio] = useState('3:4'); // iPad only: '3:4' | '9:16'
+  const aspectRatioRef = useRef('3:4');
+
+  const isIPad = /iPad/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
   useEffect(() => {
-    if (videoRef.current) {
-      startCamera(streamRef, videoRef.current, facingMode, () => {
-        setStatus('無法啟用相機。請確認使用 HTTPS、允許相機權限，並重新整理頁面。');
+    if (isRemote) {
+      // Remote iPhone camera: attach WebRTC stream instead of local getUserMedia
+      const booth = getBooth();
+      booth.connect();
+      const attach = (stream) => {
+        if (stream && videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => {});
+        }
+      };
+      attach(booth.stream);
+      if (!booth.stream) setStatus('等待 iPhone 相機連線...（可到設定頁配對）');
+      const offStream = booth.onStream(attach);
+      const offStatus = booth.onStatus((s) => {
+        if (s === 'connected') setStatus('看鏡頭，倒數後會自動拍下。');
+        else setStatus('iPhone 相機連線中斷，等待重連...');
       });
+      return () => { offStream(); offStatus(); };
     }
-    return () => stopCamera(streamRef);
+    if (videoRef.current) {
+      if (!streamRef.current || !streamRef.current.active) {
+        startCamera(streamRef, videoRef.current, facingMode, () => {
+          setStatus('無法啟用相機。請確認使用 HTTPS、允許相機權限，並重新整理頁面。');
+        });
+      } else {
+        videoRef.current.srcObject = streamRef.current;
+        videoRef.current.play().catch(() => {});
+      }
+    }
+    // Stream stays alive across screen transitions — no stopCamera on unmount
+  }, []);
+
+  // iPad: if iOS gave landscape despite portrait constraints, restart once to get portrait.
+  // Runs only on mount, not between shots — avoids the inter-shot hot-restart bug.
+  useEffect(() => {
+    if (isRemote) return;
+    const isIPad = /iPad/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!isIPad) return;
+    const v = videoRef.current;
+    if (!v) return;
+    const check = setInterval(() => {
+      if (v.videoWidth > 0) {
+        clearInterval(check);
+        if (v.videoWidth > v.videoHeight && !iPadRestartedRef.current) {
+          iPadRestartedRef.current = true;
+          startCamera(streamRef, v, facingMode, () => {});
+        }
+      }
+    }, 300);
+    return () => clearInterval(check);
   }, []);
 
   useEffect(() => {
@@ -68,9 +129,15 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
         pw = wrapW;
         ph = pw * rh / rw;
       }
-      preview.style.width = `${Math.round(pw)}px`;
-      preview.style.height = `${Math.round(ph)}px`;
-      setPreviewPx(Math.round(pw));
+      const rpw = Math.round(pw);
+      const rph = Math.round(ph);
+      preview.style.width = `${rpw}px`;
+      preview.style.height = `${rph}px`;
+      setPreviewPx(rpw);
+      if (canvasPreviewRef.current) {
+        canvasPreviewRef.current.width = rpw;
+        canvasPreviewRef.current.height = rph;
+      }
     }
     const rafId = requestAnimationFrame(() => requestAnimationFrame(updateRatio));
     window.addEventListener('resize', updateRatio);
@@ -81,14 +148,130 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
   }, [activeLayout]);
 
   useEffect(() => {
-    if (!videoRef.current) return;
     const filterObj = filters.find((f) => f.id === activeFilter);
-    videoRef.current.style.filter =
-      filterObj && filterObj.filter !== 'none' ? filterObj.filter : '';
-  }, [activeFilter, filters]);
+    const cssFilter = filterObj?.filter && filterObj.filter !== 'none' ? filterObj.filter : '';
+    // Apply CSS filter directly to preview canvas — ctx.filter is unreliable on iOS Safari
+    if (canvasPreviewRef.current) canvasPreviewRef.current.style.filter = cssFilter;
+  }, [activeFilter]);
+
+  useEffect(() => { aspectRatioRef.current = aspectRatio; }, [aspectRatio]);
+
+  // iPad: restart camera with taller constraints when switching to 9:16
+  const arMountedRef = useRef(false);
+  useEffect(() => {
+    if (isRemote) return;
+    if (!isIPad) return;
+    if (!arMountedRef.current) { arMountedRef.current = true; return; }
+    if (!videoRef.current) return;
+    startCamera(streamRef, videoRef.current, facingMode, () => {
+      setStatus('無法啟用相機。請確認使用 HTTPS、允許相機權限，並重新整理頁面。');
+    }, aspectRatio);
+  }, [aspectRatio]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const v = videoRef.current;
+      const track = streamRef.current?.getVideoTracks?.()[0];
+      const s = track?.getSettings?.() ?? {};
+      const vW = v?.videoWidth ?? 0;
+      const vH = v?.videoHeight ?? 0;
+      const devPortrait = window.screen.height > window.screen.width;
+      setCamInfo({
+        videoWidth: vW || '?',
+        videoHeight: vH || '?',
+        orientation: devPortrait ? 'portrait' : 'landscape',
+        trackW: s.width ?? '?',
+        trackH: s.height ?? '?',
+        frameRate: s.frameRate ? s.frameRate.toFixed(1) : '?',
+        resizeMode: s.resizeMode ?? '?',
+        facingMode: s.facingMode ?? facingMode,
+        trackState: track?.readyState ?? '?',
+      });
+    }, 800);
+    return () => clearInterval(id);
+  }, [facingMode]);
+
+
+
+  useEffect(() => {
+    function drawLoop() {
+      const v = videoRef.current;
+      const c = canvasPreviewRef.current;
+      if (!v || !c || v.readyState < 2) {
+        rafRef.current = requestAnimationFrame(drawLoop);
+        return;
+      }
+      // Sync canvas buffer to CSS display size every frame — prevents stretch on mount/resize
+      if (c.offsetWidth && c.offsetHeight) {
+        if (c.width !== c.offsetWidth) c.width = c.offsetWidth;
+        if (c.height !== c.offsetHeight) c.height = c.offsetHeight;
+      }
+      const vW = v.videoWidth, vH = v.videoHeight;
+      const cw = c.width, ch = c.height;
+      if (!cw || !ch) { rafRef.current = requestAnimationFrame(drawLoop); return; }
+      const ctx = c.getContext('2d');
+      ctx.save();
+      ctx.filter = v.style.filter || 'none';
+      ctx.clearRect(0, 0, cw, ch);
+      const isIPadPreview = !isRemote && (/iPad/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+      if (vW < vH) {
+        if (isIPadPreview) {
+          {
+            // Contain: show full stream, no crop, letterbox if ratios differ.
+            const srcRatio = vW / vH;
+            const dstRatio = cw / ch;
+            let drawW, drawH, dx = 0, dy = 0;
+            if (srcRatio < dstRatio) {
+              drawH = ch; drawW = ch * srcRatio; dx = (cw - drawW) / 2;
+            } else {
+              drawW = cw; drawH = cw / srcRatio; dy = (ch - drawH) / 2;
+            }
+            ctx.clearRect(0, 0, cw, ch);
+            ctx.setTransform(-1, 0, 0, 1, cw, 0);
+            ctx.drawImage(v, 0, 0, vW, vH, dx, dy, drawW, drawH);
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+          }
+        } else {
+          // iPhone: center-crop to preview canvas ratio + mirror
+          const srcRatio = vW / vH, dstRatio = cw / ch;
+          let sx = 0, sy = 0, sW = vW, sH = vH;
+          if (srcRatio > dstRatio) { sW = vH * dstRatio; sx = (vW - sW) / 2; }
+          else { sH = vW / dstRatio; sy = (vH - sH) / 2; }
+          ctx.setTransform(-1, 0, 0, 1, cw, 0);
+          ctx.drawImage(v, sx, sy, sW, sH, 0, 0, cw, ch);
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+      } else {
+        const isIPad = /iPad/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const dstRatio = cw / ch;
+        let sx = 0, sy = 0, sW = vW, sH = vH;
+        if (isIPad) {
+          const validSize = vH;
+          const validX = (vW - validSize) / 2;
+          if (1.0 > dstRatio) { sW = validSize * dstRatio; sx = validX + (validSize - sW) / 2; sH = validSize; }
+          else { sH = validSize / dstRatio; sy = (validSize - sH) / 2; sx = validX; sW = validSize; }
+        } else {
+          const srcRatio = vW / vH;
+          if (srcRatio > dstRatio) { sW = vH * dstRatio; sx = (vW - sW) / 2; }
+          else { sH = vW / dstRatio; sy = (vH - sH) / 2; }
+        }
+        ctx.setTransform(-1, 0, 0, 1, cw, 0);
+        ctx.drawImage(v, sx, sy, sW, sH, 0, 0, cw, ch);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+      }
+      ctx.restore();
+      rafRef.current = requestAnimationFrame(drawLoop);
+    }
+    rafRef.current = requestAnimationFrame(drawLoop);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, []);
 
   async function handleCapture() {
-    if (busy || !streamRef.current) return;
+    if (busy || (!isRemote && !streamRef.current)) return;
+    if (isRemote && getBooth().status !== 'connected') {
+      setStatus('iPhone 相機未連線，請至設定頁配對。');
+      return;
+    }
     setBusy(true);
 
     const required = activeLayout.requiredShots;
@@ -100,18 +283,42 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
         const shotNum = currentShots.length + 1;
         setStatus(`第 ${shotNum} 張，準備好了嗎？`);
         await runCountdown(config.countdownSeconds, setCountdown);
-        const dataUrl = captureFrame(videoRef.current, workCanvas, activeLayout, activeFilter);
+        const v = videoRef.current;
+        const track = streamRef.current?.getVideoTracks?.()[0];
+        const ts = track?.getSettings?.() ?? {};
+        const logEntry = {
+          shot: shotNum,
+          vW: v?.videoWidth, vH: v?.videoHeight,
+          tW: ts.width, tH: ts.height,
+          fps: ts.frameRate?.toFixed(1),
+          resize: ts.resizeMode,
+          rs: v?.readyState,
+          aspectRatio,
+          src: isRemote ? 'iphone-remote' : 'local',
+        };
+        setCaptureLog(prev => [...prev.slice(-5), logEntry]);
+        // Flash fires at countdown end — runs in parallel with the (possibly slow)
+        // remote transfer so the shot feels instant.
+        const flashPromise = triggerFlash(flashRef.current);
+        let dataUrl;
+        if (isRemote) {
+          setStatus('照片傳輸中...');
+          const res = await getBooth().requestCapture({
+            shotNum,
+            shotRatio: activeLayout.shotRatio,
+            filterId: activeFilter,
+            layoutId: activeLayout.id,
+          });
+          dataUrl = res.dataUrl;
+        } else {
+          dataUrl = captureFrame(videoRef.current, workCanvas, activeLayout, activeFilter, shotNum, aspectRatio);
+        }
+        await flashPromise;
         currentShots = [...currentShots, dataUrl];
         setShots(currentShots);
         setShotCount(currentShots.length);
-        await triggerFlash(flashRef.current);
         if (currentShots.length < required) {
           await wait(1200);
-          // iPad Safari: canvas drawImage can trigger stream resolution drift — re-sync video
-          if (videoRef.current && streamRef.current) {
-            videoRef.current.srcObject = streamRef.current;
-            try { await videoRef.current.play(); } catch (_) {}
-          }
         }
       }
       onAllShotsTaken(currentShots);
@@ -175,7 +382,11 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
   }
 
   async function handleGifCapture() {
-    if (busy || !streamRef.current) return;
+    if (busy || (!isRemote && !streamRef.current)) return;
+    if (isRemote && getBooth().status !== 'connected') {
+      setStatus('iPhone 相機未連線，請至設定頁配對。');
+      return;
+    }
     setBusy(true);
 
     const required = activeLayout.requiredShots;
@@ -205,10 +416,10 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
         }
       }
 
-      setStatus('等待上傳完成...');
-      await Promise.all(uploadPromises);
+      // Enter the composing screen immediately — uploads finish while it shows
       setCountdown(null);
       onGifComposing();
+      await Promise.all(uploadPromises);
 
       let result;
       try {
@@ -232,7 +443,11 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
   }
 
   async function handleGifCaptureHQ() {
-    if (busy || !streamRef.current) return;
+    if (busy || (!isRemote && !streamRef.current)) return;
+    if (isRemote && getBooth().status !== 'connected') {
+      setStatus('iPhone 相機未連線，請至設定頁配對。');
+      return;
+    }
     setBusy(true);
 
     const required = activeLayout.requiredShots;
@@ -280,9 +495,7 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
         const clipIdx = i;
         uploadPromises.push(
           encodeFramesAsJpegs(frames).then(jpegBlobs =>
-            Promise.all(jpegBlobs.map((blob, frameIdx) =>
-              uploadJpegFrame(blob, sessionId, clipIdx, frameIdx)
-            ))
+            uploadJpegFrameBatch(jpegBlobs, sessionId, clipIdx)
           )
         );
 
@@ -292,10 +505,10 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
         }
       }
 
-      setStatus('等待上傳完成...');
-      await Promise.all(uploadPromises);
+      // Enter the composing screen immediately — uploads finish while it shows
       setCountdown(null);
       onGifComposing();
+      await Promise.all(uploadPromises);
 
       let result;
       try {
@@ -336,9 +549,17 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
     };
   })();
 
-  const [captureMode, setCaptureMode] = useState('photo'); // 'photo' | 'video'
+  const handleShutter = captureMode === 'photo'
+    ? handleCapture
+    : captureMode === 'video'
+      ? handleVideoCapture
+      : handleGifCaptureHQ;
 
-  const handleShutter = captureMode === 'photo' ? handleCapture : handleVideoCapture;
+  // Remote v1: photo + GIF (GIF records the WebRTC preview element — works remotely).
+  // Video needs a raw local MediaStream — local only.
+  const captureModes = isRemote
+    ? [{ id: 'photo', label: '拍 照' }, { id: 'gif', label: 'GIF' }]
+    : [{ id: 'photo', label: '拍 照' }, { id: 'video', label: '影 片' }, { id: 'gif', label: 'GIF' }];
 
   return (
     <section className="stage">
@@ -364,9 +585,27 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
 
         {/* Header */}
         <div className="camera-shoot-header">
-          <div className="camera-shot-title">
-            Photo <em>{nextShot}</em> of {required}
+          <div className="camera-shot-title-row">
+            <div className="camera-shot-title">
+              Photo <em>{nextShot}</em> of {required}
+            </div>
+            {isIPad && !isRemote && (
+              <div className="camera-ratio-toggle">
+                {['3:4', '9:16'].map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setAspectRatio(r)}
+                    className={`camera-ratio-btn${aspectRatio === r ? ' active' : ''}`}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+
           {/* Progress bars */}
           <div className="camera-progress-bars">
             {Array.from({ length: required }).map((_, i) => (
@@ -413,7 +652,11 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
                 autoPlay
                 playsInline
                 muted
-                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', display: 'none' }}
+              />
+              <canvas
+                ref={canvasPreviewRef}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
               />
               {heartGuideStyle && (
                 <div className="camera-heart-guide" style={heartGuideStyle} aria-hidden="true" />
@@ -435,16 +678,23 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
           </div>
         </div>
 
-        {/* Filter pills */}
-        <div className="camera-filter-row">
-          {filters.map((filter) => (
+        {/* Filter selector */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '6px 12px', flexWrap: 'wrap' }}>
+          {filters.map((f) => (
             <button
-              key={filter.id}
-              className={`filter-pill${activeFilter === filter.id ? ' active' : ''}`}
+              key={f.id}
               type="button"
-              onClick={() => setActiveFilter(filter.id)}
+              disabled={busy}
+              onClick={() => setActiveFilter(f.id)}
+              style={{
+                padding: '4px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 13,
+                background: activeFilter === f.id ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.18)',
+                color: activeFilter === f.id ? '#333' : '#eee',
+                fontWeight: activeFilter === f.id ? 700 : 400,
+                transition: 'background 0.15s',
+              }}
             >
-              {filter.name}
+              {f.name}
             </button>
           ))}
         </div>
@@ -452,7 +702,7 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
         {/* Mode toggle + shutter */}
         <div className="camera-controls">
           <div className="camera-mode-toggle">
-            {[{ id: 'photo', label: '拍 照' }, { id: 'video', label: '影 片' }].map((m) => (
+            {captureModes.map((m) => (
               <button
                 key={m.id}
                 type="button"
@@ -473,6 +723,15 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
           >
             {captureMode === 'video' ? (
               <span style={{ width: 40, height: 40, borderRadius: 10, background: '#E0584B', display: 'block' }} />
+            ) : captureMode === 'gif' ? (
+              <span style={{
+                width: 86, height: 86, borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'linear-gradient(180deg, #F2DCA6, #E4C97E)',
+                fontWeight: 800, fontSize: 22, letterSpacing: '0.06em', color: '#5A431B',
+              }}>
+                GIF
+              </span>
             ) : (
               <span style={{
                 width: 86, height: 86, borderRadius: '50%', display: 'block',

@@ -8,7 +8,11 @@ const execFileAsync = promisify(execFile);
 const { PNG } = require("pngjs");
 const omggif = require("omggif");
 const GIFEncoder = require("gif-encoder-2");
-const { GIFEncoder: GifencEncoder, quantize: gifencQuantize, applyPalette: gifencApplyPalette } = require("gifenc");
+const {
+  GIFEncoder: GifencEncoder,
+  quantize: gifencQuantize,
+  applyPalette: gifencApplyPalette,
+} = require("gifenc");
 const jpeg = require("jpeg-js");
 
 const port = Number(process.env.PORT || 3000);
@@ -23,7 +27,9 @@ fs.mkdirSync(uploadsDir, { recursive: true });
 // Load .env without external dependencies
 function loadEnv() {
   try {
-    const lines = fs.readFileSync(path.join(rootDir, ".env"), "utf8").split("\n");
+    const lines = fs
+      .readFileSync(path.join(rootDir, ".env"), "utf8")
+      .split("\n");
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith("#")) continue;
@@ -31,7 +37,10 @@ function loadEnv() {
       if (eq < 0) continue;
       const key = trimmed.slice(0, eq).trim();
       let val = trimmed.slice(eq + 1).trim();
-      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      if (
+        (val.startsWith('"') && val.endsWith('"')) ||
+        (val.startsWith("'") && val.endsWith("'"))
+      ) {
         val = val.slice(1, -1);
       }
       if (key && !(key in process.env)) process.env[key] = val;
@@ -41,16 +50,23 @@ function loadEnv() {
 loadEnv();
 
 const UPLOAD_SECRET = process.env.UPLOAD_SECRET || "";
-if (!UPLOAD_SECRET) console.warn("[security] UPLOAD_SECRET not set — photo URLs are insecure");
+if (!UPLOAD_SECRET)
+  console.warn("[security] UPLOAD_SECRET not set — photo URLs are insecure");
 
 // Derive 32-byte AES key from UPLOAD_SECRET
-const CIPHER_KEY = crypto.createHash("sha256").update(UPLOAD_SECRET || "insecure-default").digest();
+const CIPHER_KEY = crypto
+  .createHash("sha256")
+  .update(UPLOAD_SECRET || "insecure-default")
+  .digest();
 
 // Encrypt filename → URL-safe token (AES-256-GCM, random IV each call)
 function encryptFilename(filename) {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", CIPHER_KEY, iv);
-  const encrypted = Buffer.concat([cipher.update(filename, "utf8"), cipher.final()]);
+  const encrypted = Buffer.concat([
+    cipher.update(filename, "utf8"),
+    cipher.final(),
+  ]);
   const tag = cipher.getAuthTag();
   return Buffer.concat([iv, tag, encrypted]).toString("base64url");
 }
@@ -96,8 +112,8 @@ function readConfig() {
     theme: {
       primary: "#f28ca8",
       secondary: "#fff4f7",
-      ink: "#49333a"
-    }
+      ink: "#49333a",
+    },
   };
 
   try {
@@ -111,7 +127,7 @@ function sendJson(res, statusCode, data) {
   const body = JSON.stringify(data);
   res.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
-    "Content-Length": Buffer.byteLength(body)
+    "Content-Length": Buffer.byteLength(body),
   });
   res.end(body);
 }
@@ -129,14 +145,18 @@ function safeJoin(baseDir, requestPath) {
 }
 
 function serveFile(res, filePath, options = {}) {
-  if (!filePath || !fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+  if (
+    !filePath ||
+    !fs.existsSync(filePath) ||
+    !fs.statSync(filePath).isFile()
+  ) {
     sendText(res, 404, "Not found.");
     return;
   }
 
   const ext = path.extname(filePath).toLowerCase();
   const headers = {
-    "Content-Type": contentTypes[ext] || "application/octet-stream"
+    "Content-Type": contentTypes[ext] || "application/octet-stream",
   };
 
   if (options.disposition) {
@@ -149,19 +169,22 @@ function serveFile(res, filePath, options = {}) {
 
 function escHtml(s) {
   return String(s)
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function buildViewPage({ filename, rawToken, isVideo, config }) {
-  const photoUrl  = `/photos/${encodeURIComponent(rawToken)}`;
-  const safeFile  = escHtml(filename);
-  const safeName  = escHtml(config.coupleName || "Jim & Camilla");
-  const safeDate  = escHtml(config.weddingDate || "");
-  const safeTag   = escHtml(config.tagline || "Wedding Photo Booth");
-  const safePink  = escHtml((config.theme && config.theme.primary) || "#f28ca8");
-  const btnLabel  = isVideo ? "儲存影片到相簿" : "長按圖片儲存 / 分享";
-  const hintText  = isVideo
+  const photoUrl = `/photos/${encodeURIComponent(rawToken)}`;
+  const safeFile = escHtml(filename);
+  const safeName = escHtml(config.coupleName || "Jim & Camilla");
+  const safeDate = escHtml(config.weddingDate || "");
+  const safeTag = escHtml(config.tagline || "Wedding Photo Booth");
+  const safePink = escHtml((config.theme && config.theme.primary) || "#f28ca8");
+  const btnLabel = isVideo ? "儲存影片到相簿" : "長按圖片儲存 / 分享";
+  const hintText = isVideo
     ? "點按後選「儲存影片」存到相簿，再上傳 IG 限動或傳 LINE。"
     : "長按圖片選「儲存影像」存到相簿，或點下方按鈕分享。";
 
@@ -334,7 +357,11 @@ body{background:radial-gradient(ellipse at 50% 35%,#241712 0%,#140d09 75%,#0a060
 
 // Range-request-aware video serving (required by iOS Safari for <video> playback)
 function serveVideoFile(req, res, filePath, contentType, options = {}) {
-  if (!filePath || !fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+  if (
+    !filePath ||
+    !fs.existsSync(filePath) ||
+    !fs.statSync(filePath).isFile()
+  ) {
     sendText(res, 404, "Not found.");
     return;
   }
@@ -345,8 +372,11 @@ function serveVideoFile(req, res, filePath, contentType, options = {}) {
 
   if (rangeHeader) {
     const match = rangeHeader.match(/bytes=(\d*)-(\d*)/);
-    const start = match && match[1] ? parseInt(match[1], 10) : 0;
-    const end = match && match[2] ? parseInt(match[2], 10) : fileSize - 1;
+    let start = match && match[1] ? parseInt(match[1], 10) : 0;
+    let end = match && match[2] ? parseInt(match[2], 10) : fileSize - 1;
+    // Clamp to valid file bounds
+    start = Math.max(0, Math.min(start, fileSize - 1));
+    end = Math.max(start, Math.min(end, fileSize - 1));
     const chunkSize = end - start + 1;
     headers["Content-Range"] = `bytes ${start}-${end}/${fileSize}`;
     headers["Content-Length"] = chunkSize;
@@ -371,7 +401,9 @@ function getOrigin(req) {
 }
 
 function safeLayoutName(value) {
-  const cleaned = String(value || "photo").toLowerCase().replace(/[^a-z0-9-]/g, "-");
+  const cleaned = String(value || "photo")
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-");
   return cleaned.replace(/-+/g, "-").replace(/^-|-$/g, "") || "photo";
 }
 
@@ -399,17 +431,27 @@ function readRequestBody(req, maxBytes = 30 * 1024 * 1024) {
 // Required for LINE preview and IG compatibility.
 // Silently skips if ffmpeg is not installed.
 async function convertVideoToMp4(inputPath, outputPath) {
-  await execFileAsync("ffmpeg", [
-    "-i", inputPath,
-    "-c:v", "libx264",
-    "-profile:v", "baseline",
-    "-level", "3.1",
-    "-pix_fmt", "yuv420p",
-    "-movflags", "+faststart",
-    "-an",
-    "-y",
-    outputPath,
-  ], { timeout: 60_000 });
+  await execFileAsync(
+    "ffmpeg",
+    [
+      "-i",
+      inputPath,
+      "-c:v",
+      "libx264",
+      "-profile:v",
+      "baseline",
+      "-level",
+      "3.1",
+      "-pix_fmt",
+      "yuv420p",
+      "-movflags",
+      "+faststart",
+      "-an",
+      "-y",
+      outputPath,
+    ],
+    { timeout: 60_000 },
+  );
 }
 
 async function handlePhotoUpload(req, res) {
@@ -418,17 +460,27 @@ async function handlePhotoUpload(req, res) {
   const contentType = (req.headers["content-type"] || "").split(";")[0].trim();
 
   const allowedTypes = {
-    "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif",
-    "video/mp4": "mp4", "video/webm": "webm",
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "video/mp4": "mp4",
+    "video/webm": "webm",
   };
   const ext = allowedTypes[contentType];
   if (!ext) {
-    sendJson(res, 400, { error: "Only image/jpeg, image/png, image/webp, image/gif, video/mp4, video/webm are accepted." });
+    sendJson(res, 400, {
+      error:
+        "Only image/jpeg, image/png, image/webp, image/gif, video/mp4, video/webm are accepted.",
+    });
     return;
   }
 
   const isVideo = ext === "mp4" || ext === "webm";
-  const buffer = await readRequestBody(req, isVideo ? 100 * 1024 * 1024 : 30 * 1024 * 1024);
+  const buffer = await readRequestBody(
+    req,
+    isVideo ? 100 * 1024 * 1024 : 30 * 1024 * 1024,
+  );
   if (buffer.length < 100) {
     sendJson(res, 400, { error: "File is too small or empty." });
     return;
@@ -457,7 +509,10 @@ async function handlePhotoUpload(req, res) {
       savedFilename = finalFilename;
     } catch (err) {
       // ffmpeg not installed or failed — keep raw file, warn operator
-      console.warn("[video] ffmpeg conversion skipped:", err.message.split("\n")[0]);
+      console.warn(
+        "[video] ffmpeg conversion skipped:",
+        err.message.split("\n")[0],
+      );
     }
   }
 
@@ -467,7 +522,7 @@ async function handlePhotoUpload(req, res) {
     id: path.parse(savedFilename).name,
     filename: savedFilename,
     token,
-    downloadUrl: `${getOrigin(req)}/photos/${token}`
+    downloadUrl: `${getOrigin(req)}/photos/${token}`,
   });
 }
 
@@ -475,19 +530,34 @@ async function handlePhotoUpload(req, res) {
 
 function scaleImage(src, srcW, srcH, dstW, dstH) {
   const dst = new Uint8Array(dstW * dstH * 4);
-  const sx = srcW / dstW, sy = srcH / dstH;
+  const sx = srcW / dstW,
+    sy = srcH / dstH;
   for (let dy = 0; dy < dstH; dy++) {
     for (let dx = 0; dx < dstW; dx++) {
-      const sxf = dx * sx, syf = dy * sy;
-      const x0 = Math.min(Math.floor(sxf), srcW-1), x1 = Math.min(x0+1, srcW-1);
-      const y0 = Math.min(Math.floor(syf), srcH-1), y1 = Math.min(y0+1, srcH-1);
-      const fx = sxf-x0, fy = syf-y0;
-      const w00=(1-fx)*(1-fy), w10=fx*(1-fy), w01=(1-fx)*fy, w11=fx*fy;
-      const i00=(y0*srcW+x0)*4, i10=(y0*srcW+x1)*4;
-      const i01=(y1*srcW+x0)*4, i11=(y1*srcW+x1)*4;
-      const di=(dy*dstW+dx)*4;
-      for (let c=0; c<4; c++)
-        dst[di+c] = Math.round(src[i00+c]*w00+src[i10+c]*w10+src[i01+c]*w01+src[i11+c]*w11);
+      const sxf = dx * sx,
+        syf = dy * sy;
+      const x0 = Math.min(Math.floor(sxf), srcW - 1),
+        x1 = Math.min(x0 + 1, srcW - 1);
+      const y0 = Math.min(Math.floor(syf), srcH - 1),
+        y1 = Math.min(y0 + 1, srcH - 1);
+      const fx = sxf - x0,
+        fy = syf - y0;
+      const w00 = (1 - fx) * (1 - fy),
+        w10 = fx * (1 - fy),
+        w01 = (1 - fx) * fy,
+        w11 = fx * fy;
+      const i00 = (y0 * srcW + x0) * 4,
+        i10 = (y0 * srcW + x1) * 4;
+      const i01 = (y1 * srcW + x0) * 4,
+        i11 = (y1 * srcW + x1) * 4;
+      const di = (dy * dstW + dx) * 4;
+      for (let c = 0; c < 4; c++)
+        dst[di + c] = Math.round(
+          src[i00 + c] * w00 +
+            src[i10 + c] * w10 +
+            src[i01 + c] * w01 +
+            src[i11 + c] * w11,
+        );
     }
   }
   return dst;
@@ -496,9 +566,17 @@ function scaleImage(src, srcW, srcH, dstW, dstH) {
 function blitCover(src, srcW, srcH, dst, dstW, dstX, dstY, zoneW, zoneH) {
   const srcRatio = srcW / srcH;
   const dstRatio = zoneW / zoneH;
-  let cropX = 0, cropY = 0, cropW = srcW, cropH = srcH;
-  if (srcRatio > dstRatio) { cropW = Math.round(srcH * dstRatio); cropX = Math.round((srcW - cropW) / 2); }
-  else { cropH = Math.round(srcW / dstRatio); cropY = Math.round((srcH - cropH) / 2); }
+  let cropX = 0,
+    cropY = 0,
+    cropW = srcW,
+    cropH = srcH;
+  if (srcRatio > dstRatio) {
+    cropW = Math.round(srcH * dstRatio);
+    cropX = Math.round((srcW - cropW) / 2);
+  } else {
+    cropH = Math.round(srcW / dstRatio);
+    cropY = Math.round((srcH - cropH) / 2);
+  }
   const scaleX = cropW / zoneW;
   const scaleY = cropH / zoneH;
   for (let dy = 0; dy < zoneH; dy++) {
@@ -520,9 +598,21 @@ function blitCover(src, srcW, srcH, dst, dstW, dstX, dstY, zoneW, zoneH) {
       const w10 = fx * (1 - fy);
       const w01 = (1 - fx) * fy;
       const w11 = fx * fy;
-      dst[di]   = Math.round(src[i00]   * w00 + src[i10]   * w10 + src[i01]   * w01 + src[i11]   * w11);
-      dst[di+1] = Math.round(src[i00+1] * w00 + src[i10+1] * w10 + src[i01+1] * w01 + src[i11+1] * w11);
-      dst[di+2] = Math.round(src[i00+2] * w00 + src[i10+2] * w10 + src[i01+2] * w01 + src[i11+2] * w11);
+      dst[di] = Math.round(
+        src[i00] * w00 + src[i10] * w10 + src[i01] * w01 + src[i11] * w11,
+      );
+      dst[di + 1] = Math.round(
+        src[i00 + 1] * w00 +
+          src[i10 + 1] * w10 +
+          src[i01 + 1] * w01 +
+          src[i11 + 1] * w11,
+      );
+      dst[di + 2] = Math.round(
+        src[i00 + 2] * w00 +
+          src[i10 + 2] * w10 +
+          src[i01 + 2] * w01 +
+          src[i11 + 2] * w11,
+      );
     }
   }
 }
@@ -536,10 +626,10 @@ function blurRGBA(src, w, h) {
       const i = (y * w + x) * 4;
       const l = x > 0 ? i - 4 : i;
       const r = x < w - 1 ? i + 4 : i;
-      tmp[i]   = (src[l]   + src[i]   + src[r])   / 3;
-      tmp[i+1] = (src[l+1] + src[i+1] + src[r+1]) / 3;
-      tmp[i+2] = (src[l+2] + src[i+2] + src[r+2]) / 3;
-      tmp[i+3] = 255;
+      tmp[i] = (src[l] + src[i] + src[r]) / 3;
+      tmp[i + 1] = (src[l + 1] + src[i + 1] + src[r + 1]) / 3;
+      tmp[i + 2] = (src[l + 2] + src[i + 2] + src[r + 2]) / 3;
+      tmp[i + 3] = 255;
     }
   }
   // vertical pass back into src
@@ -548,10 +638,10 @@ function blurRGBA(src, w, h) {
       const i = (y * w + x) * 4;
       const u = y > 0 ? i - w * 4 : i;
       const d = y < h - 1 ? i + w * 4 : i;
-      src[i]   = (tmp[u]   + tmp[i]   + tmp[d])   / 3;
-      src[i+1] = (tmp[u+1] + tmp[i+1] + tmp[d+1]) / 3;
-      src[i+2] = (tmp[u+2] + tmp[i+2] + tmp[d+2]) / 3;
-      src[i+3] = 255;
+      src[i] = (tmp[u] + tmp[i] + tmp[d]) / 3;
+      src[i + 1] = (tmp[u + 1] + tmp[i + 1] + tmp[d + 1]) / 3;
+      src[i + 2] = (tmp[u + 2] + tmp[i + 2] + tmp[d + 2]) / 3;
+      src[i + 3] = 255;
     }
   }
 }
@@ -563,9 +653,9 @@ function alphaOver(dst, dstW, overlay, overlayW, overlayH) {
       const di = (y * dstW + x) * 4;
       const a = overlay[si + 3] / 255;
       if (a === 0) continue;
-      dst[di]   = Math.round(overlay[si]   * a + dst[di]   * (1 - a));
-      dst[di+1] = Math.round(overlay[si+1] * a + dst[di+1] * (1 - a));
-      dst[di+2] = Math.round(overlay[si+2] * a + dst[di+2] * (1 - a));
+      dst[di] = Math.round(overlay[si] * a + dst[di] * (1 - a));
+      dst[di + 1] = Math.round(overlay[si + 1] * a + dst[di + 1] * (1 - a));
+      dst[di + 2] = Math.round(overlay[si + 2] * a + dst[di + 2] * (1 - a));
     }
   }
 }
@@ -578,14 +668,72 @@ async function handleGifFrameUpload(req, res) {
   const clip = parseInt(url.searchParams.get("clip") || "-1");
   const frame = parseInt(url.searchParams.get("frame") || "-1");
 
-  if (!/^[a-zA-Z0-9_-]{8,64}$/.test(session) || clip < 0 || clip > 20 || frame < 0 || frame > 60) {
-    sendJson(res, 400, { error: "Invalid params" }); return;
+  if (
+    !/^[a-zA-Z0-9_-]{8,64}$/.test(session) ||
+    clip < 0 ||
+    clip > 20 ||
+    frame < 0 ||
+    frame > 60
+  ) {
+    sendJson(res, 400, { error: "Invalid params" });
+    return;
   }
 
   const buffer = await readRequestBody(req, 2 * 1024 * 1024);
-  const framePath = path.join(uploadsDir, `frame_${session}_${clip}_${String(frame).padStart(3, "0")}.jpg`);
+  const framePath = path.join(
+    uploadsDir,
+    `frame_${session}_${clip}_${String(frame).padStart(3, "0")}.jpg`,
+  );
   fs.writeFileSync(framePath, buffer);
   sendJson(res, 200, { ok: true });
+}
+
+// POST /api/gif/frames-batch?session=<id>&clip=<n>
+// Body: [uint32BE frameCount] then per frame [uint32BE byteLength][jpeg bytes]
+// Writes the same frame_<session>_<clip>_<idx>.jpg files as the per-frame endpoint,
+// but in ONE request — kills per-request RTT overhead over tunnels.
+async function handleGifFrameBatchUpload(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  const session = url.searchParams.get("session") || "";
+  const clip = parseInt(url.searchParams.get("clip") || "-1");
+
+  if (!/^[a-zA-Z0-9_-]{8,64}$/.test(session) || clip < 0 || clip > 20) {
+    sendJson(res, 400, { error: "Invalid params" });
+    return;
+  }
+
+  const buffer = await readRequestBody(req, 8 * 1024 * 1024);
+  if (buffer.length < 4) {
+    sendJson(res, 400, { error: "Bad payload" });
+    return;
+  }
+  const count = buffer.readUInt32BE(0);
+  if (count < 1 || count > 60) {
+    sendJson(res, 400, { error: "Bad frame count" });
+    return;
+  }
+  let off = 4;
+  for (let i = 0; i < count; i++) {
+    if (off + 4 > buffer.length) {
+      sendJson(res, 400, { error: "Truncated payload" });
+      return;
+    }
+    const len = buffer.readUInt32BE(off);
+    off += 4;
+    if (len < 1 || len > 2 * 1024 * 1024 || off + len > buffer.length) {
+      sendJson(res, 400, { error: "Truncated payload" });
+      return;
+    }
+    fs.writeFileSync(
+      path.join(
+        uploadsDir,
+        `frame_${session}_${clip}_${String(i).padStart(3, "0")}.jpg`,
+      ),
+      buffer.subarray(off, off + len),
+    );
+    off += len;
+  }
+  sendJson(res, 200, { ok: true, frames: count });
 }
 
 // POST /api/gif/clip?session=<id>&idx=<n>
@@ -596,7 +744,8 @@ async function handleGifClipUpload(req, res) {
   const idx = parseInt(url.searchParams.get("idx") || "-1");
 
   if (!/^[a-zA-Z0-9_-]{8,64}$/.test(session) || idx < 0 || idx > 20) {
-    sendJson(res, 400, { error: "Invalid params" }); return;
+    sendJson(res, 400, { error: "Invalid params" });
+    return;
   }
 
   const buffer = await readRequestBody(req, 10 * 1024 * 1024);
@@ -606,10 +755,17 @@ async function handleGifClipUpload(req, res) {
 }
 
 // Compose 3 GIF variants from JPEG frames uploaded by HQ mode
-async function composeGifFromJpegFrames(sessionId, layoutId, layoutW, layoutH, zones) {
+async function composeGifFromJpegFrames(
+  sessionId,
+  layoutId,
+  layoutW,
+  layoutH,
+  zones,
+) {
   // Collect frame files for this session
-  const allFiles = fs.readdirSync(uploadsDir)
-    .filter(f => f.startsWith(`frame_${sessionId}_`) && f.endsWith(".jpg"));
+  const allFiles = fs
+    .readdirSync(uploadsDir)
+    .filter((f) => f.startsWith(`frame_${sessionId}_`) && f.endsWith(".jpg"));
 
   const clipFrameMap = new Map();
   for (const f of allFiles) {
@@ -632,11 +788,15 @@ async function composeGifFromJpegFrames(sessionId, layoutId, layoutW, layoutH, z
       const buf = fs.readFileSync(path.join(uploadsDir, file));
       return jpeg.decode(buf, { useTArray: true });
     });
-    return { frames: decoded.map(d => d.data), w: decoded[0].width, h: decoded[0].height };
+    return {
+      frames: decoded.map((d) => d.data),
+      w: decoded[0].width,
+      h: decoded[0].height,
+    };
   });
 
-  const actualClipW = clips.find(c => c.frames.length > 0)?.w || 720;
-  const actualClipH = clips.find(c => c.frames.length > 0)?.h || 960;
+  const actualClipW = clips.find((c) => c.frames.length > 0)?.w || 720;
+  const actualClipH = clips.find((c) => c.frames.length > 0)?.h || 960;
   const maxZoneW = zones.reduce((m, z) => Math.max(m, z.w), 0) || actualClipW;
 
   const overlayPath = path.join(rootDir, "public", "frames", `${layoutId}.png`);
@@ -645,19 +805,37 @@ async function composeGifFromJpegFrames(sessionId, layoutId, layoutW, layoutH, z
     : null;
 
   const variants = [
-    // high: NeuQuant 256色 full-res
-    { name: "high", quality: 10, applyBlur: false, virtualClipW: actualClipW, maxOutW: null, fps: 10, colors: 256, useGifenc: false },
+    // high: NeuQuant 256色, capped at 720px wide — phones can't tell, encode is ~5-9x faster
+    {
+      name: "high",
+      quality: 10,
+      applyBlur: false,
+      virtualClipW: actualClipW,
+      maxOutW: 720,
+      fps: 10,
+      colors: 256,
+      useGifenc: false,
+    },
     // opt disabled — gifenc causes color banding on faces; keep for future research
     // { name: "opt", quality: 10, applyBlur: false, virtualClipW: actualClipW, maxOutW: 700, fps: 8, colors: 256, useGifenc: true },
   ];
 
   const results = {};
 
-  for (const { name, quality, applyBlur, virtualClipW, maxOutW, fps, colors, useGifenc } of variants) {
-    const virtualClipH = Math.round(actualClipH * virtualClipW / actualClipW);
+  for (const {
+    name,
+    quality,
+    applyBlur,
+    virtualClipW,
+    maxOutW,
+    fps,
+    colors,
+    useGifenc,
+  } of variants) {
+    const virtualClipH = Math.round((actualClipH * virtualClipW) / actualClipW);
     const GIF_MAX_W = Math.min(
       maxOutW || layoutW,
-      Math.floor(virtualClipW * layoutW / maxZoneW)
+      Math.floor((virtualClipW * layoutW) / maxZoneW),
     );
     const scale = Math.min(GIF_MAX_W / layoutW, 1);
     const gifW = Math.round(layoutW * scale);
@@ -665,10 +843,16 @@ async function composeGifFromJpegFrames(sessionId, layoutId, layoutW, layoutH, z
     const frameDelay = Math.round(1000 / fps);
 
     const overlayScaled = overlayPng
-      ? scaleImage(overlayPng.data, overlayPng.width, overlayPng.height, gifW, gifH)
+      ? scaleImage(
+          overlayPng.data,
+          overlayPng.width,
+          overlayPng.height,
+          gifW,
+          gifH,
+        )
       : null;
 
-    const maxFrames = Math.max(...clips.map(c => c.frames.length), 1);
+    const maxFrames = Math.max(...clips.map((c) => c.frames.length), 1);
 
     // Build all GIF frame pixel buffers
     const gifFrames = [];
@@ -684,7 +868,13 @@ async function composeGifFromJpegFrames(sessionId, layoutId, layoutW, layoutH, z
         if (virtualClipW < actualClipW || applyBlur) {
           srcW = virtualClipW;
           srcH = virtualClipH;
-          const scaled = scaleImage(rawData, actualClipW, actualClipH, srcW, srcH);
+          const scaled = scaleImage(
+            rawData,
+            actualClipW,
+            actualClipH,
+            srcW,
+            srcH,
+          );
           srcData = new Uint8ClampedArray(scaled);
           if (applyBlur) blurRGBA(srcData, srcW, srcH);
         } else {
@@ -751,20 +941,32 @@ async function composeGifFromJpegFrames(sessionId, layoutId, layoutW, layoutH, z
 async function handleGifCompose(req, res) {
   try {
     const bodyBuf = await readRequestBody(req, 1024 * 1024);
-    const { sessionId, layoutId, layoutW, layoutH, zones, mode } =
-      JSON.parse(bodyBuf.toString("utf8"));
+    const { sessionId, layoutId, layoutW, layoutH, zones, mode } = JSON.parse(
+      bodyBuf.toString("utf8"),
+    );
 
     if (!/^[a-zA-Z0-9_-]{8,64}$/.test(sessionId)) {
-      sendJson(res, 400, { error: "Invalid session" }); return;
+      sendJson(res, 400, { error: "Invalid session" });
+      return;
     }
 
     // JPEG multi-mode path
     if (mode === "jpeg") {
-      const results = await composeGifFromJpegFrames(sessionId, layoutId, layoutW, layoutH, zones);
+      const results = await composeGifFromJpegFrames(
+        sessionId,
+        layoutId,
+        layoutW,
+        layoutH,
+        zones,
+      );
       const origin = getOrigin(req);
       const response = {};
       for (const [key, val] of Object.entries(results)) {
-        response[key] = { token: val.token, filename: val.filename, downloadUrl: `${origin}/photos/${val.token}` };
+        response[key] = {
+          token: val.token,
+          filename: val.filename,
+          downloadUrl: `${origin}/photos/${val.token}`,
+        };
       }
       sendJson(res, 201, response);
       return;
@@ -773,12 +975,16 @@ async function handleGifCompose(req, res) {
     // Decode clip GIFs
     const clips = zones.map((_, i) => {
       const p = path.join(uploadsDir, `clip_${sessionId}_${i}.gif`);
-      if (!fs.existsSync(p)) { console.warn(`[gif] missing clip ${i}`); return { frames: [], w: 180, h: 240 }; }
+      if (!fs.existsSync(p)) {
+        console.warn(`[gif] missing clip ${i}`);
+        return { frames: [], w: 180, h: 240 };
+      }
       const buf = fs.readFileSync(p);
       const gr = new omggif.GifReader(buf);
       const n = gr.numFrames();
       const info = gr.frameInfo(0);
-      const fw = info.width, fh = info.height;
+      const fw = info.width,
+        fh = info.height;
       const frames = Array.from({ length: n }, (_, f) => {
         const px = new Uint8Array(fw * fh * 4);
         gr.decodeAndBlitFrameRGBA(f, px);
@@ -788,11 +994,19 @@ async function handleGifCompose(req, res) {
     });
 
     // Load overlay PNG
-    const overlayPath = path.join(rootDir, "public", "frames", `${layoutId}.png`);
+    const overlayPath = path.join(
+      rootDir,
+      "public",
+      "frames",
+      `${layoutId}.png`,
+    );
     let overlayScaled = null;
     const maxZoneW = zones.reduce((m, z) => Math.max(m, z.w), 0);
-    const clipW = clips.find(c => c.frames.length > 0)?.w || 480;
-    const GIF_MAX_W = Math.min(layoutW, Math.floor(clipW * layoutW / (maxZoneW || clipW)));
+    const clipW = clips.find((c) => c.frames.length > 0)?.w || 480;
+    const GIF_MAX_W = Math.min(
+      layoutW,
+      Math.floor((clipW * layoutW) / (maxZoneW || clipW)),
+    );
     const scale = Math.min(GIF_MAX_W / layoutW, 1);
     const gifW = Math.round(layoutW * scale);
     const gifH = Math.round(layoutH * scale);
@@ -824,7 +1038,17 @@ async function handleGifCompose(req, res) {
         const dstY = Math.round(zone.y * scale);
         const zoneW = Math.round(zone.w * scale);
         const zoneH = Math.round(zone.h * scale);
-        blitCover(smoothed, clip.w, clip.h, frame, gifW, dstX, dstY, zoneW, zoneH);
+        blitCover(
+          smoothed,
+          clip.w,
+          clip.h,
+          frame,
+          gifW,
+          dstX,
+          dstY,
+          zoneW,
+          zoneH,
+        );
       }
 
       if (overlayScaled) alphaOver(frame, gifW, overlayScaled, gifW, gifH);
@@ -844,7 +1068,11 @@ async function handleGifCompose(req, res) {
       fs.unlink(path.join(uploadsDir, `clip_${sessionId}_${i}.gif`), () => {});
     });
 
-    sendJson(res, 201, { token, filename, downloadUrl: `${getOrigin(req)}/photos/${token}` });
+    sendJson(res, 201, {
+      token,
+      filename,
+      downloadUrl: `${getOrigin(req)}/photos/${token}`,
+    });
   } catch (err) {
     console.error("[gif/compose]", err);
     sendJson(res, 500, { error: String(err.message || err) });
@@ -859,6 +1087,38 @@ function route(req, res) {
 
   if (req.method === "GET" && pathname === "/health") {
     sendJson(res, 200, { ok: true });
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/api/debug") {
+    if (process.env.DEBUG !== "true") {
+      res.writeHead(204).end();
+      return;
+    }
+    let body = "";
+    req.on("data", (c) => {
+      body += c;
+    });
+    req.on("end", () => {
+      try {
+        const data = JSON.parse(body);
+        const ts = new Date().toISOString().slice(11, 23);
+        const entries = Object.entries(data);
+        const lines = [];
+        for (let i = 0; i < entries.length; i += 5) {
+          lines.push(
+            entries
+              .slice(i, i + 5)
+              .map(([k, v]) => `${k}:${v}`)
+              .join("  "),
+          );
+        }
+        console.log("\x1b[36m[DEBUG %s]\x1b[0m\n  %s", ts, lines.join("\n  "));
+      } catch {
+        console.log("[DEBUG] (invalid json)");
+      }
+      res.writeHead(204).end();
+    });
     return;
   }
 
@@ -895,7 +1155,9 @@ function route(req, res) {
   }
 
   if (req.method === "GET" && pathname.startsWith("/backgrounds/")) {
-    const filename = path.basename(decodeURIComponent(pathname.replace("/backgrounds/", "")));
+    const filename = path.basename(
+      decodeURIComponent(pathname.replace("/backgrounds/", "")),
+    );
     serveFile(res, path.join(backgroundsDir, filename));
     return;
   }
@@ -909,6 +1171,10 @@ function route(req, res) {
     return handleGifFrameUpload(req, res);
   }
 
+  if (req.method === "POST" && pathname === "/api/gif/frames-batch") {
+    return handleGifFrameBatchUpload(req, res);
+  }
+
   if (req.method === "POST" && pathname === "/api/gif/clip") {
     return handleGifClipUpload(req, res);
   }
@@ -920,13 +1186,24 @@ function route(req, res) {
   if (req.method === "GET" && pathname.startsWith("/view/")) {
     const rawToken = decodeURIComponent(pathname.replace("/view/", ""));
     const filename = decryptToken(rawToken);
-    if (!filename) { sendText(res, 404, "Not found."); return; }
+    if (!filename) {
+      sendText(res, 404, "Not found.");
+      return;
+    }
     const filePath = path.join(uploadsDir, path.basename(filename));
-    if (!fs.existsSync(filePath)) { sendText(res, 404, "Not found."); return; }
+    if (!fs.existsSync(filePath)) {
+      sendText(res, 404, "Not found.");
+      return;
+    }
     const ext = path.extname(filename).toLowerCase();
     const isVideo = ext === ".mp4" || ext === ".webm";
     const config = readConfig();
-    const html = buildViewPage({ filename: path.basename(filename), rawToken, isVideo, config });
+    const html = buildViewPage({
+      filename: path.basename(filename),
+      rawToken,
+      isVideo,
+      config,
+    });
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     res.end(html);
     return;
@@ -950,9 +1227,14 @@ function route(req, res) {
     return;
   }
 
+  // SPA: serve static file from dist/ if it exists, otherwise React Router index.html fallback
   if (req.method === "GET") {
-    const staticPath = pathname === "/" ? "/index.html" : pathname;
-    serveFile(res, safeJoin(publicDir, staticPath));
+    const filePath = safeJoin(publicDir, pathname);
+    if (filePath && fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      serveFile(res, filePath);
+    } else {
+      serveFile(res, path.join(publicDir, "index.html"));
+    }
     return;
   }
 
@@ -963,6 +1245,77 @@ const server = http.createServer((req, res) => {
   Promise.resolve(route(req, res)).catch((error) => {
     console.error(error);
     sendJson(res, 500, { error: "Internal server error." });
+  });
+});
+
+// ── Remote camera signaling: iPad (booth) ⇆ iPhone (camera) ──
+// Single-pair model: latest booth socket + latest camera socket are linked.
+// All non-hello messages are relayed verbatim to the counterpart.
+const { WebSocketServer } = require("ws");
+const wss = new WebSocketServer({ server, path: "/ws" });
+let boothWs = null;
+let cameraWs = null;
+
+function wsSend(ws, obj) {
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj));
+}
+
+// Terminate sockets that stop answering protocol pings (zombie TCP after network blip)
+const WS_HEARTBEAT_MS = 25000;
+setInterval(() => {
+  for (const ws of wss.clients) {
+    if (ws.isAlive === false) {
+      ws.terminate(); // fires 'close' → peer gets peer-left
+      continue;
+    }
+    ws.isAlive = false;
+    ws.ping();
+  }
+}, WS_HEARTBEAT_MS);
+
+wss.on("connection", (ws) => {
+  let role = null;
+  ws.isAlive = true;
+  ws.on("pong", () => { ws.isAlive = true; });
+  ws.on("message", (raw) => {
+    let msg;
+    try {
+      msg = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    // App-level ping: reply directly (browsers can't send protocol pings)
+    if (msg.type === "ping") {
+      wsSend(ws, { type: "pong" });
+      return;
+    }
+    if (msg.type === "hello") {
+      role = msg.role === "booth" ? "booth" : "camera";
+      if (role === "booth") {
+        if (boothWs && boothWs !== ws) boothWs.close();
+        boothWs = ws;
+      } else {
+        if (cameraWs && cameraWs !== ws) cameraWs.close();
+        cameraWs = ws;
+      }
+      if (boothWs && cameraWs) {
+        wsSend(boothWs, { type: "peer-joined" });
+        wsSend(cameraWs, { type: "peer-joined" });
+      }
+      return;
+    }
+    const peer = role === "booth" ? cameraWs : boothWs;
+    wsSend(peer, msg);
+  });
+  ws.on("close", () => {
+    if (role === "booth" && boothWs === ws) {
+      boothWs = null;
+      wsSend(cameraWs, { type: "peer-left" });
+    }
+    if (role === "camera" && cameraWs === ws) {
+      cameraWs = null;
+      wsSend(boothWs, { type: "peer-left" });
+    }
   });
 });
 

@@ -1,0 +1,170 @@
+// Booth (iPad) side of the remote-camera link.
+// Owns: WS signaling connection, WebRTC peer (receives iPhone stream),
+// and the capture request/response round-trip.
+//
+// Singleton — survives screen transitions like streamRef does.
+
+let instance = null;
+
+export function getBooth() {
+  if (!instance) instance = createBooth();
+  return instance;
+}
+
+function createBooth() {
+  let ws = null;
+  let pc = null;
+  let closed = false;
+  let reconnectTimer = null;
+  let pingTimer = null;
+  let pongDeadline = null;
+
+  const api = {
+    status: 'disconnected', // disconnected | waiting | connected
+    stream: null,
+    connect,
+    disconnect,
+    requestCapture,
+    onStatus,
+    onStream,
+  };
+
+  const statusListeners = new Set();
+  const streamListeners = new Set();
+  const pendingCaptures = new Map(); // shotNum -> { resolve, reject, timer }
+
+  function setStatus(s) {
+    api.status = s;
+    statusListeners.forEach((f) => f(s));
+  }
+
+  function onStatus(fn) {
+    statusListeners.add(fn);
+    return () => statusListeners.delete(fn);
+  }
+
+  function onStream(fn) {
+    streamListeners.add(fn);
+    return () => streamListeners.delete(fn);
+  }
+
+  function sendJson(obj) {
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj));
+  }
+
+  function sendSignal(data) {
+    sendJson({ type: 'signal', data });
+  }
+
+  function teardownPc() {
+    if (pc) {
+      try { pc.close(); } catch {}
+      pc = null;
+    }
+    api.stream = null;
+  }
+
+  function connect() {
+    closed = false;
+    if (ws && (ws.readyState === 0 || ws.readyState === 1)) return;
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(`${proto}://${location.host}/ws`);
+    ws.onopen = () => {
+      sendJson({ type: 'hello', role: 'booth' });
+      setStatus('waiting');
+      // App-level keepalive: detect zombie sockets (TCP half-open after network blip)
+      clearInterval(pingTimer);
+      pingTimer = setInterval(() => {
+        if (pongDeadline && Date.now() > pongDeadline) {
+          try { ws.close(); } catch {} // triggers onclose → reconnect
+          return;
+        }
+        if (!pongDeadline) pongDeadline = Date.now() + 10000;
+        sendJson({ type: 'ping' });
+      }, 15000);
+    };
+    ws.onmessage = async (e) => {
+      let msg;
+      try { msg = JSON.parse(e.data); } catch { return; }
+      if (msg.type === 'pong') {
+        pongDeadline = null;
+      } else if (msg.type === 'peer-left') {
+        teardownPc();
+        setStatus('waiting');
+      } else if (msg.type === 'signal') {
+        await handleSignal(msg.data);
+      } else if (msg.type === 'captured') {
+        const p = pendingCaptures.get(msg.shotNum);
+        if (p) {
+          clearTimeout(p.timer);
+          pendingCaptures.delete(msg.shotNum);
+          if (msg.error) p.reject(new Error(msg.error));
+          else p.resolve(msg);
+        }
+      }
+      // peer-joined: camera initiates the offer; nothing to do here
+    };
+    ws.onclose = () => {
+      clearInterval(pingTimer);
+      pongDeadline = null;
+      teardownPc();
+      setStatus('disconnected');
+      if (!closed) reconnectTimer = setTimeout(connect, 2000);
+    };
+    ws.onerror = () => {};
+  }
+
+  function disconnect() {
+    closed = true;
+    clearTimeout(reconnectTimer);
+    clearInterval(pingTimer);
+    pongDeadline = null;
+    teardownPc();
+    if (ws) { try { ws.close(); } catch {} ws = null; }
+    setStatus('disconnected');
+  }
+
+  async function handleSignal(data) {
+    if (data.kind === 'offer') {
+      teardownPc();
+      pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+      pc.ontrack = (ev) => {
+        api.stream = ev.streams[0];
+        streamListeners.forEach((f) => f(api.stream));
+        setStatus('connected');
+      };
+      pc.onicecandidate = (ev) => {
+        if (ev.candidate) sendSignal({ kind: 'ice', candidate: ev.candidate });
+      };
+      pc.onconnectionstatechange = () => {
+        if (pc && (pc.connectionState === 'failed' || pc.connectionState === 'disconnected')) {
+          setStatus('waiting');
+        }
+      };
+      await pc.setRemoteDescription(data.sdp);
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      sendSignal({ kind: 'answer', sdp: pc.localDescription });
+    } else if (data.kind === 'ice' && pc) {
+      try { await pc.addIceCandidate(data.candidate); } catch {}
+    }
+  }
+
+  // Ask iPhone to capture one full-res frame. Resolves { dataUrl, debug }.
+  function requestCapture({ shotNum, shotRatio, filterId, layoutId }) {
+    return new Promise((resolve, reject) => {
+      if (!ws || ws.readyState !== 1 || api.status !== 'connected') {
+        reject(new Error('iPhone 相機未連線'));
+        return;
+      }
+      const timer = setTimeout(() => {
+        pendingCaptures.delete(shotNum);
+        reject(new Error('iPhone 拍照逾時'));
+      }, 10000);
+      pendingCaptures.set(shotNum, { resolve, reject, timer });
+      sendJson({ type: 'capture', shotNum, shotRatio, filterId, layoutId });
+    });
+  }
+
+  return api;
+}

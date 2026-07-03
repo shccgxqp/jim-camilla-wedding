@@ -46,20 +46,15 @@ html,
 body {
   margin: 0;
   padding: 0;
-  height: 100%;
-  overflow: hidden;
 }
 
 body {
   color: var(--cream);
   font-family: var(--font-sans);
-  background: radial-gradient(ellipse at 50% 35%, #241712 0%, #140d09 75%, #0a0605 100%);
 }
 
 #root {
   width: 100vw;
-  height: 100vh;
-  overflow: hidden;
 }
 
 button,
@@ -534,6 +529,10 @@ h2 {
   background: rgba(30, 20, 10, 0.5) !important;
 }
 
+.preview-frame06 {
+  background: #000 !important;
+}
+
 /* ── Filter bar ── */
 .filter-bar {
   display: flex;
@@ -750,6 +749,46 @@ h2 {
   color: #E4C97E;
   font-weight: 500;
   margin-bottom: 12px;
+}
+
+.camera-shot-title-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-ratio-toggle {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 4px;
+}
+
+.camera-ratio-btn {
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(228, 201, 126, 0.45);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(228, 201, 126, 0.6);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.camera-ratio-btn.active {
+  background: rgba(228, 201, 126, 0.22);
+  border-color: #E4C97E;
+  color: #E4C97E;
+}
+
+.camera-ratio-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .camera-shot-title {

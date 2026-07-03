@@ -1,8 +1,10 @@
 node_modules/
 dist/
 .claude/
-uploads/*.png
-uploads/*.jpg
-uploads/*.jpeg
-uploads/*.webp
+uploads/
 .env
+
+# editor/tool backups & sources
+*~
+*.png~
+*.kra

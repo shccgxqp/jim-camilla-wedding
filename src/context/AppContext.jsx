@@ -18,7 +18,7 @@ function restoreLayout() {
 export function AppProvider({ children }) {
   const [config, setConfig] = useState(DEFAULT_CONFIG);
   const [activeLayout, setActiveLayout] = useState(restoreLayout);
-  const [activeFilter, setActiveFilter] = useState('none');
+  const [activeFilter, setActiveFilter] = useState('natural');
   const [shots, setShots] = useState([]);
   const [facingMode, setFacingMode] = useState('user');
   const [busy, setBusy] = useState(false);
@@ -26,9 +26,14 @@ export function AppProvider({ children }) {
   const [resultData, setResultData] = useState(null);
   const [errorInfo, setErrorInfo] = useState(null);
   const [backgrounds, setBackgrounds] = useState([]);
+  // 'local' = this device's camera; 'remote' = paired iPhone camera
+  const [cameraSource, setCameraSource] = useState(
+    () => localStorage.getItem('pb_camera_source') === 'remote' ? 'remote' : 'local'
+  );
   const streamRef = useRef(null);
 
   useEffect(() => { sessionStorage.setItem('pb_screen', screen); }, [screen]);
+  useEffect(() => { localStorage.setItem('pb_camera_source', cameraSource); }, [cameraSource]);
   useEffect(() => {
     if (activeLayout?.id) sessionStorage.setItem('pb_layout', activeLayout.id);
   }, [activeLayout]);
@@ -45,6 +50,7 @@ export function AppProvider({ children }) {
       resultData, setResultData,
       errorInfo, setErrorInfo,
       backgrounds, setBackgrounds,
+      cameraSource, setCameraSource,
       streamRef,
       layouts,
       filters,
