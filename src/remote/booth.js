@@ -130,6 +130,11 @@ function createBooth() {
       try { msg = JSON.parse(e.data); } catch { return; }
       if (msg.type === 'pong') {
         pongDeadline = null;
+      } else if (msg.type === 'replaced') {
+        // another booth page took over (e.g. duplicate tab) — stop reconnecting
+        closed = true;
+        teardownPc();
+        setStatus('disconnected');
       } else if (msg.type === 'peer-left') {
         teardownPc();
         setStatus('waiting');

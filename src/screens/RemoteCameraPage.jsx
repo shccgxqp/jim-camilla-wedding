@@ -202,6 +202,13 @@ export default function RemoteCameraPage() {
           setPairError('配對碼錯誤，請確認 iPad 設定頁顯示的代碼。');
           setPairCode('');
           setStatus('配對失敗');
+        } else if (msg.type === 'replaced') {
+          // another page (same code) took over — stop reconnecting or we'd
+          // kick each other in a loop; user can tap 重新連線 to take back
+          closed = true;
+          setLinked(false);
+          setStatus('已在其他頁面連線。要在此頁使用請按下方按鈕。');
+          teardownPc();
         } else if (msg.type === 'peer-joined') {
           boothOnlineRef.current = true;
           setStatus('拍貼機已上線，建立視訊...');

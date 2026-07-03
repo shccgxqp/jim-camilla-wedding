@@ -1428,21 +1428,43 @@ wss.on("connection", (ws) => {
       ws.pairCode =
         typeof msg.pair === "string" ? msg.pair.slice(0, 16).toUpperCase() : "";
       if (role === "booth") {
-        if (boothWs && boothWs !== ws) boothWs.close();
+        if (boothWs && boothWs !== ws) {
+          wsSend(boothWs, { type: "replaced" });
+          boothWs.close();
+        }
         boothWs = ws;
+        if (cameraWs) {
+          if (boothWs.pairCode && boothWs.pairCode === cameraWs.pairCode) {
+            wsSend(boothWs, { type: "peer-joined" });
+            wsSend(cameraWs, { type: "peer-joined" });
+          } else {
+            // waiting camera doesn't match this booth — drop it
+            const c = cameraWs;
+            cameraWs = null;
+            wsSend(c, { type: "pair-rejected" });
+            c.close();
+          }
+        }
       } else {
-        if (cameraWs && cameraWs !== ws) cameraWs.close();
+        // Validate BEFORE taking the slot — a wrong code must never disturb
+        // an active camera (zombie sockets / guests opening the URL).
+        if (
+          boothWs &&
+          (!ws.pairCode || ws.pairCode !== boothWs.pairCode)
+        ) {
+          wsSend(ws, { type: "pair-rejected" });
+          ws.close();
+          return;
+        }
+        if (cameraWs && cameraWs !== ws) {
+          // same code = legit takeover (page reload) — tell the old page to stop
+          wsSend(cameraWs, { type: "replaced" });
+          cameraWs.close();
+        }
         cameraWs = ws;
-      }
-      if (boothWs && cameraWs) {
-        // Pair only when codes match — stops guests who open the camera URL
-        // from hijacking the booth's camera role.
-        if (boothWs.pairCode && boothWs.pairCode === cameraWs.pairCode) {
+        if (boothWs) {
           wsSend(boothWs, { type: "peer-joined" });
           wsSend(cameraWs, { type: "peer-joined" });
-        } else {
-          wsSend(cameraWs, { type: "pair-rejected" });
-          cameraWs.close();
         }
       }
       return;
