@@ -1,8 +1,15 @@
-# Wedding Photo Booth
+# Jim & Camilla — 2026.11.07
 
-An iPad-friendly wedding photo booth web app.
+這個網站,是為了紀念我們的愛情而做的。
 
-Guests can choose a frame layout, take photos with the device camera, generate a finished photo strip or collage, save it to the server, and scan a QR Code to download the final image on their phone.
+裡面有我們的故事、婚禮資訊,還有一台給大家玩的拍貼機 —— 掃個 QR code,拍張照,把這天的笑容帶回家。
+
+謝謝你來看這個網站,也謝謝你來參加我們的婚禮。
+願你也被好好愛著,也好好愛人。
+
+—— Jim & Camilla
+
+---
 
 ## Run
 
@@ -11,10 +18,8 @@ npm install
 npm start
 ```
 
-Open `http://localhost:3000` for local testing. For iPad camera access in production, deploy behind HTTPS.
+開 `http://localhost:3000`。正式上線需要 HTTPS(iPad/手機鏡頭權限要求)。
 
 ## Configure
 
-Edit `config/wedding.json` to update the couple name, wedding date, theme colors, countdown seconds, and public URL.
-
-If the app is deployed behind a reverse proxy or custom domain, set `publicBaseUrl` or the `PUBLIC_BASE_URL` environment variable so generated QR Codes use the correct HTTPS URL.
+編輯 `config/wedding.json`:新人姓名、婚期、主題色、倒數秒數、對外網址(`publicBaseUrl`,QR code 會用它)。
