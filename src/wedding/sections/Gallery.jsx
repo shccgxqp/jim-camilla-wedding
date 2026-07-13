@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 
 const ITEMS = [
-  { src: '/wedding/images/gallery-1-kyoto.jpg', alt: '2019 京都的雨', lbl: '2019 · 京都的雨', cls: 'g1' },
-  { src: '/wedding/images/gallery-2-beach.jpg', alt: '2020 海邊', lbl: '2020 · 海邊', cls: 'g2' },
-  { src: '/wedding/images/gallery-3-engagement.jpg', alt: '訂婚那天', lbl: '訂婚那天', cls: 'g3' },
-  { src: '/wedding/images/gallery-4-cats.jpg', alt: '三位董事', lbl: '三位董事', cls: 'g4' },
-  { src: '/wedding/images/gallery-5-proposal.jpg', alt: '求婚當下', lbl: '求婚當下', cls: 'g5' },
-  { src: '/wedding/images/gallery-6-champagne.jpg', alt: '香檳塔練習', lbl: '香檳塔練習', cls: 'g6' },
-  { src: '/wedding/images/gallery-7-ring.jpg', alt: '戒指特寫', lbl: '戒指 · 特寫', cls: 'g7' },
-  { src: '/wedding/images/gallery-8-rehearsal.jpg', alt: '彩排晚餐', lbl: '彩排晚餐', cls: 'g8' },
+  { src: '/wedding/images/gallery-1-registration.jpg', alt: '大安户政事務所登記', lbl: '大安户政 · 登記日', cls: 'g1' },
+  { src: '/wedding/images/gallery-2-certificate.jpg', alt: '結婚登記證書', lbl: '我們的登記證書', cls: 'g2' },
+  { src: '/wedding/images/gallery-3-bouquet.jpg', alt: '捧花與戒指', lbl: '捧花 · 戒指', cls: 'g3' },
+  { src: '/wedding/images/gallery-4-carry.jpg', alt: '公園裡的公主抱', lbl: '公園裡的公主抱', cls: 'g4' },
+  { src: '/wedding/images/gallery-5-veil.jpg', alt: '樹下的頭紗', lbl: '樹下 · 頭紗', cls: 'g5' },
+  { src: '/wedding/images/gallery-6-mirror.jpg', alt: 'Wedding Day 鏡中自拍', lbl: '鏡子裡的 Wedding Day', cls: 'g6' },
+  { src: '/wedding/images/gallery-9-sunglasses.jpg', alt: '戴上墨鏡出發', lbl: '戴上墨鏡 · 出發', cls: 'g7' },
+  { src: '/wedding/images/gallery-7-bear.jpg', alt: '大熊裝置藝術前比心', lbl: '比心 · 大熊', cls: 'g8' },
+  { src: '/wedding/images/gallery-8-dino.jpg', alt: '恐龍溜滑梯前敬禮', lbl: '恐龍前 · 敬禮', cls: 'g9' },
+  { src: '/wedding/images/gallery-10-dino2.jpg', alt: '恐龍前宣戰', lbl: '恐龍前 · 宣戰', cls: 'g10' },
+  { src: '/wedding/images/gallery-11-dessert.jpg', alt: '旅途中的甜點時光', lbl: '旅途中 · 甜點時光', cls: 'g11' },
 ];
 
 export default function Gallery({ onLightbox }) {
@@ -35,7 +38,7 @@ export default function Gallery({ onLightbox }) {
         <div className="w-bot-grid">
           {ITEMS.map((item) => (
             <div
-              key={item.cls}
+              key={item.src}
               className={`item ${item.cls} w-fade`}
               onClick={() => onLightbox(item.src)}
             >
