@@ -1,7 +1,7 @@
 {
-  "name": "wedding-photo-booth",
+  "name": "jim-camilla-wedding",
   "version": "1.0.0",
-  "description": "iPad wedding photo booth with server-side photo storage and QR downloads.",
+  "description": "Jim & Camilla wedding site with iPad photo booth, server-side photo storage, and QR downloads.",
   "main": "server.cjs",
   "scripts": {
     "start": "node server.cjs",

@@ -163,7 +163,7 @@
 
 /* ============ STORY ============ */
 .w-story{padding:0}
-.w-story-track{position:relative;height:960vh;background:var(--bg)}
+.w-story-track{position:relative;height:var(--story-track-h, 960vh);background:var(--bg)}
 .w-story-sticky{position:sticky;top:0;height:100vh;width:100%;overflow:hidden}
 .w-story-bigtitle{
   position:absolute;left:0;right:0;top:36px;

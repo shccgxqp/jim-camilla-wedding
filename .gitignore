@@ -3,7 +3,7 @@ dist/
 .claude/
 uploads/
 .env
-
+圖/
 # editor/tool backups & sources
 *~
 *.png~

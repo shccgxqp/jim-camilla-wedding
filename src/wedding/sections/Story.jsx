@@ -1,25 +1,98 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
 const CHAPTERS = [
-  { ch: 'Chapter One · 2018', title: '她以為他是來面試的', body: '咖啡店,下午三點,誤會程度相當高。兩個人都點了拿鐵,半小時後才發現 — 我們是同一場聯誼,而且', em: '坐錯桌了。', side: 'right', img: '/wedding/images/story-1-2018-coffee.jpg', cap: '2018 · the coffee shop', alt: '2018 咖啡店初遇' },
-  { ch: 'Chapter Two · 2019', title: '京都的雨', body: '第一次一起出國。Camilla 忘了帶傘,Jim 忘了訂飯店。我們在鴨川旁邊吃了一碗很貴的拉麵,然後決定:', em: '再也不分開旅行。', side: 'right', img: '/wedding/images/story-2-2019-kyoto.jpg', cap: '2019 · 京都的雨', alt: '2019 京都的雨' },
-  { ch: 'Chapter Three · 2021', title: '三位董事報到', body: '我們以為一隻就夠了。事實證明 — ', em: '人類遠遠不夠數。', body2: '本婚禮謹獻給:豆漿、芝麻、和飯糰。', side: 'left', img: '/wedding/images/story-3-2021-cats.jpg', cap: '2021 · 三位董事', alt: '2021 三位董事' },
-  { ch: 'Chapter Four · 2024', title: '23 分鐘的求婚演講', body: 'Jim 準備了 23 分鐘的求婚演講,Camilla 在第 4 分鐘就說好,但他堅持要把剩下的 ', em: '19 分鐘講完', body2: ',因為「練很久」。', side: 'left', img: '/wedding/images/story-4-2024-proposal.jpg', cap: '2024 · the proposal', alt: '2024 求婚那天' },
-  { ch: 'Chapter Five · 2026', title: '就是今天', body: '八年後 — 一頓很長的午餐。歡迎你來見證我們從', em: '「不是,你才走錯」', body2: '走到「我願意」。', side: 'right', img: '/wedding/images/story-5-2026-today.jpg', cap: '2026 · today', alt: '2026 就是今天' },
+  {
+    ch: "Chapter One",
+    title: "大學的相遇",
+    body: "迎新宿營的晚上,燈光昏黃、營火搖曳。不自覺在人群裡多看了一眼,就這樣",
+    em: "記住了彼此。",
+    side: "right",
+    img: "/wedding/images/story-1-camp.jpg",
+    cap: "the day we met",
+    alt: "大學宿營相遇",
+  },
+  {
+    ch: "Chapter Two",
+    title: "第一次一起露營",
+    body: "手忙腳亂地搭帳篷、烤肉、看星星、篝火前談心。從那一夜起,我們決定",
+    em: "往後的風景都要一起看。",
+    side: "right",
+    img: "/wedding/images/story-2-camping.jpg",
+    cap: "our first camp",
+    alt: "第一次一起露營",
+  },
+  {
+    ch: "Chapter Three",
+    title: "四十天的歐洲",
+    body: "背著行囊,橫越了整個歐洲,四十天沒有回頭路。每一段火車、每一座城市,都成了",
+    em: "只屬於我們的地圖。",
+    side: "left",
+    img: "/wedding/images/story-3-europe.jpg",
+    cap: "forty days across europe",
+    alt: "四十天歐洲旅行",
+  },
+  {
+    ch: "Chapter Four",
+    title: "走過的每一段路",
+    body: "這些年,我們一起去了好多好多地方。陌生的城市因為有彼此陪伴,平凡都變成了",
+    em: "不平凡。",
+    side: "left",
+    img: "/wedding/images/story-4-travels.jpg",
+    cap: "everywhere, together",
+    alt: "一起去過的各種地方",
+  },
+  {
+    ch: "Chapter Five",
+    title: "宜蘭南山上的驚喜",
+    body: "山嵐繚繞的帳篷外,綿綿細雨。那一刻他單膝跪下,而她只來得及說出",
+    em: "「我願意」",
+    body2: "三個字,眼淚就先掉了下來。",
+    side: "right",
+    img: "/wedding/images/story-5-alishan-proposal.jpg",
+    cap: "the proposal",
+    alt: "宜蘭南山驚喜求婚",
+  },
+  {
+    ch: "Chapter Six",
+    title: "笑到肚子痛的日常",
+    body: "沒有什麼特別的理由,就是一句無聊的玩笑,就能笑得",
+    em: "東倒西歪。",
+    body2: "這大概就是最喜歡的,平凡的幸福。",
+    side: "left",
+    img: "/wedding/images/story-6-laughing.jpg",
+    cap: "just us, laughing",
+    alt: "笑嘻嘻的日常",
+  },
+  {
+    ch: "Chapter Seven",
+    title: "敬我們，敬餘生",
+    body: "愛是日常，但這一天想把它變得不一樣。現在,",
+    em: "誠摯得邀請您的到來",
+    body2: ",來見證我們攜手說出「我願意」的這一天。",
+    side: "right",
+    img: "/wedding/images/story-7-today.jpg",
+    cap: "cheers to us !",
+    alt: "婚禮邀請",
+  },
 ];
 
-const TILTS = [-3.2, 2.4, -1.8, 3.0, -2.2];
+const TILTS = [-3.2, 2.4, -1.8, 3.0, -2.2, 2.8, -1.5];
 const STACK_GAP = 28;
 const ENTER_LEN = 1.0;
 const DWELL_LEN = 0.7;
 
 function buildSegs(n) {
   const segs = [];
-  let p = 0, cp = 0;
+  let p = 0,
+    cp = 0;
   for (let i = 0; i < n; i++) {
     segs.push({ s: p, e: p + ENTER_LEN, cpS: cp, cpE: cp + 1 });
-    p += ENTER_LEN; cp += 1;
-    if (i < n - 1) { segs.push({ s: p, e: p + DWELL_LEN, cpS: cp, cpE: cp }); p += DWELL_LEN; }
+    p += ENTER_LEN;
+    cp += 1;
+    if (i < n - 1) {
+      segs.push({ s: p, e: p + DWELL_LEN, cpS: cp, cpE: cp });
+      p += DWELL_LEN;
+    }
   }
   return { segs, totalU: p, totalCp: cp };
 }
@@ -35,8 +108,12 @@ function rawToCardP(eff, segs, totalU, totalCp) {
   return totalCp;
 }
 
-function easeOut(t) { return 1 - Math.pow(1 - t, 2.2); }
-function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function easeOut(t) {
+  return 1 - Math.pow(1 - t, 2.2);
+}
+function clamp(v, lo, hi) {
+  return Math.max(lo, Math.min(hi, v));
+}
 
 export default function Story() {
   const trackRef = useRef(null);
@@ -65,12 +142,12 @@ export default function Story() {
       cardRefs.current.forEach((card, i) => {
         if (!card) return;
         if (cardP < i) {
-          card.style.opacity = '0';
+          card.style.opacity = "0";
           card.style.transform = `translate(-50%, 120vh) rotate(0deg)`;
           card.style.zIndex = String(i + 1);
           return;
         }
-        card.style.opacity = '1';
+        card.style.opacity = "1";
         card.style.zIndex = String(i + 1);
         const local = cardP - i;
         if (local < 1) {
@@ -95,43 +172,53 @@ export default function Story() {
 
       txtRefs.current.forEach((t, j) => {
         if (!t) return;
-        let op = 0, dxFactor = 0;
+        let op = 0,
+          dxFactor = 0;
         if (j === activeIdx) {
           op = clamp((localActive - 0.45) / 0.45, 0, 1);
           dxFactor = 1 - op;
         } else if (j === activeIdx - 1) {
-          op = clamp(1 - (localActive - 0.40) / 0.50, 0, 1);
+          op = clamp(1 - (localActive - 0.4) / 0.5, 0, 1);
         }
         const on = op > 0.02;
-        t.classList.toggle('on', on);
+        t.classList.toggle("on", on);
         t.style.opacity = op.toFixed(3);
         if (on) {
-          const isLeft = t.classList.contains('left');
+          const isLeft = t.classList.contains("left");
           const dx = (isLeft ? -12 : 12) * dxFactor;
           t.style.transform = `translate(${dx}px, -50%)`;
         } else {
-          t.style.transform = '';
+          t.style.transform = "";
         }
       });
 
       dotRefs.current.forEach((d, j) => {
-        if (d) d.classList.toggle('on', j === activeIdx);
+        if (d) d.classList.toggle("on", j === activeIdx);
       });
     }
 
-    function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
+    function onScroll() {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
     update();
     return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
     };
   }, []);
 
   return (
     <section className="w-story w-section">
-      <div className="w-story-track" ref={trackRef}>
+      <div
+        className="w-story-track"
+        ref={trackRef}
+        style={{ "--story-track-h": `${N * 192}vh` }}
+      >
         <div className="w-story-sticky">
           <h2 className="w-story-bigtitle">our story</h2>
 
@@ -139,9 +226,14 @@ export default function Story() {
             <div
               key={i}
               className={`w-txt ${c.side}`}
-              ref={el => { txtRefs.current[i] = el; }}
+              ref={(el) => {
+                txtRefs.current[i] = el;
+              }}
             >
-              <h3><span className="ch">{c.ch}</span>{c.title}</h3>
+              <h3>
+                <span className="ch">{c.ch}</span>
+                {c.title}
+              </h3>
               <p>
                 {c.body}
                 {c.em && <em>{c.em}</em>}
@@ -156,7 +248,9 @@ export default function Story() {
                 key={i}
                 className="w-card"
                 data-i={i}
-                ref={el => { cardRefs.current[i] = el; }}
+                ref={(el) => {
+                  cardRefs.current[i] = el;
+                }}
               >
                 <div className="photo">
                   <img alt={c.alt} src={c.img} />
@@ -168,7 +262,12 @@ export default function Story() {
 
           <div className="w-dots">
             {CHAPTERS.map((_, i) => (
-              <b key={i} ref={el => { dotRefs.current[i] = el; }} />
+              <b
+                key={i}
+                ref={(el) => {
+                  dotRefs.current[i] = el;
+                }}
+              />
             ))}
           </div>
         </div>
