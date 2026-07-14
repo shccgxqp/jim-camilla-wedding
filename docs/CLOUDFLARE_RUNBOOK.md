@@ -46,6 +46,7 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 
 - GIF composition now occurs in the booth browser. The final animated GIF and, when the device supports WebCodecs H.264, an IG-friendly MP4 are uploaded to R2; Node filesystem, native image codecs, and `ffmpeg` are not used by the normal booth flow.
 - The browser GIF path produces one 720px-wide GIF variant. Its companion MP4 loops the same frames four times (about six seconds) and is encoded as H.264 in an MP4 container. If that device cannot encode H.264, the saved GIF remains available and the capture still succeeds.
+- Video result pages use the browser's native file-share sheet for the primary **儲存到照片** action. On iPhone, the guest chooses **儲存影片** in that sheet; web pages cannot silently write a video to the Photos library. A normal file download remains as a fallback.
 - Remote camera signaling uses one Cloudflare Durable Object per pairing code.
 
 ## Feature status (2026-07-14)
@@ -65,7 +66,7 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 
 1. iPad camera: each layout, filters, photo upload, QR, and phone download.
 2. Video upload and mobile playback/download, including byte-range streaming.
-3. GIF capture on every layout, including visual quality, composition time, and IG MP4 download/playback on the actual booth device.
+3. GIF capture on every layout, including visual quality, composition time, and IG MP4 playback plus iPhone **儲存影片** on the actual booth device.
 4. iPhone remote camera pairing, reconnect, and capture.
 5. Run a private-event test with actual tablet and iPhone over the venue-like network.
 

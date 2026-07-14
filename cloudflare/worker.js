@@ -75,6 +75,46 @@ function mediaView(row, token, gifToken) {
   return new Response(`<!doctype html><html lang="zh-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(weddingConfig.coupleName)} Photo Booth</title><style>body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#251510;color:#fff7ef;font-family:system-ui,sans-serif}main{width:min(92vw,560px);text-align:center}img,video{display:block;width:100%;border-radius:14px}a{color:#ffe0c6}</style></head><body><main><p>${escapeHtml(weddingConfig.coupleName)} · Photo Booth</p>${element}<p><a href="${mediaUrl}" download="${escapeHtml(row.filename)}">下載原始檔</a></p>${gifLink}</main></body></html>`, { headers: { "content-type": "text/html; charset=utf-8" } });
 }
 
+function mediaViewWithPhotosSave(row, token, gifToken) {
+  const isVideo = row.content_type.startsWith("video/");
+  const mediaUrl = `/photos/${encodeURIComponent(token)}`;
+  const element = isVideo
+    ? `<video controls autoplay muted loop playsinline src="${mediaUrl}"></video>`
+    : `<img src="${mediaUrl}" alt="Wedding photo">`;
+  const saveAction = isVideo
+    ? `<div class="actions"><button type="button" id="save-to-photos">儲存到照片</button><p id="save-hint">點選後，在 iPhone 分享選單選擇「儲存影片」。</p><a href="${mediaUrl}" download="${escapeHtml(row.filename)}">下載到檔案（備用）</a></div>`
+    : `<p><a href="${mediaUrl}" download="${escapeHtml(row.filename)}">下載原始檔</a></p>`;
+  const gifLink = gifToken
+    ? `<p><a href="/photos/${encodeURIComponent(gifToken)}">下載 GIF</a></p>`
+    : "";
+  const shareScript = isVideo
+    ? `<script>
+      const saveButton = document.getElementById('save-to-photos');
+      const hint = document.getElementById('save-hint');
+      saveButton.addEventListener('click', async () => {
+        try {
+          if (!navigator.share || !navigator.canShare) throw new Error('unsupported');
+          saveButton.disabled = true;
+          hint.textContent = '正在準備影片…';
+          const response = await fetch(${JSON.stringify(mediaUrl)});
+          if (!response.ok) throw new Error('fetch-failed');
+          const blob = await response.blob();
+          const file = new File([blob], ${JSON.stringify(row.filename)}, { type: ${JSON.stringify(row.content_type)} });
+          if (!navigator.canShare({ files: [file] })) throw new Error('file-share-unsupported');
+          await navigator.share({ files: [file], title: 'Wedding Photo Booth' });
+          hint.textContent = '請在分享選單選擇「儲存影片」。';
+        } catch (error) {
+          // AbortError means the guest simply closed the native share sheet.
+          hint.textContent = '此瀏覽器無法直接開啟儲存選單，請長按影片後選擇「儲存影片」，或使用下方備用下載。';
+        } finally {
+          saveButton.disabled = false;
+        }
+      });
+    </script>`
+    : "";
+  return new Response(`<!doctype html><html lang="zh-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(weddingConfig.coupleName)} Photo Booth</title><style>body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#251510;color:#fff7ef;font-family:system-ui,sans-serif}main{width:min(92vw,560px);text-align:center}img,video{display:block;width:100%;border-radius:14px}a{color:#ffe0c6}.actions{margin:20px 0}.actions button{border:0;border-radius:999px;background:#ffe0c6;color:#3b1c16;padding:13px 22px;font:600 16px system-ui}.actions button:disabled{opacity:.65}.actions p{font-size:14px;line-height:1.5;color:#f5d7c0}</style></head><body><main><p>${escapeHtml(weddingConfig.coupleName)} · Photo Booth</p>${element}${saveAction}${gifLink}</main>${shareScript}</body></html>`, { headers: { "content-type": "text/html; charset=utf-8" } });
+}
+
 function parseRange(rangeHeader, size) {
   if (!rangeHeader?.startsWith("bytes=")) return null;
   const [startText, endText] = rangeHeader.slice(6).split("-", 2);
@@ -296,7 +336,7 @@ export default {
     if (request.method === "GET" && pathname.startsWith("/view/")) {
       const token = decodeURIComponent(pathname.slice(6));
       const row = await findMedia(env, token);
-      return row ? mediaView(row, token, url.searchParams.get("gif")) : new Response("Not found.", { status: 404 });
+      return row ? mediaViewWithPhotosSave(row, token, url.searchParams.get("gif")) : new Response("Not found.", { status: 404 });
     }
     if (pathname.startsWith("/api/gif/")) return json({ error: "GIF composition is not yet available in the Cloudflare preview." }, 501);
     return new Response("Not found.", { status: 404 });
