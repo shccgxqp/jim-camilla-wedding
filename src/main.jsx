@@ -6,11 +6,14 @@ import App from './App.jsx';
 import WeddingSite from './wedding/WeddingSite.jsx';
 import WeddingSiteV2 from './wedding-v2/WeddingSiteV2.jsx';
 import RemoteCameraPage from './screens/RemoteCameraPage.jsx';
+import SiteVersionSwitch from './components/SiteVersionSwitch.jsx';
+import './version-switch.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
-      <Routes>
+  <BrowserRouter>
+    <SiteVersionSwitch />
+    <Routes>
         <Route path="/photo-booth/camera" element={<RemoteCameraPage />} />
         <Route path="/photo-booth/*" element={<AppProvider><App /></AppProvider>} />
         <Route path="/v2" element={<WeddingSiteV2 />} />

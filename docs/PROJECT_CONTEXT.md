@@ -30,6 +30,13 @@ npm start
 | 後端 | `server.cjs` | 靜態檔、上傳、下載頁與 WebSocket relay |
 | 婚禮設定 | `config/wedding.json` | 新人資訊、日期、主題與公開網址 |
 
+## 線上版本切換
+
+- `/`：原版婚禮網站。
+- `/v2`：新版婚禮網站。
+- 兩個婚禮網站頁面右上角均顯示「原版／新版」切換器。
+- `vercel.json` 將未知網站路徑 rewrite 至 `index.html`，使 React Router 的 `/v2` 直接開啟與重新整理皆可正常運作。
+
 ## 樣式規則
 
 - 婚禮網站：`src/wedding/wedding.css`，原生 CSS。
