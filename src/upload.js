@@ -1,110 +1,32 @@
 import qrcode from 'qrcode-generator';
 
-export async function uploadPhoto(blob, layoutId) {
+async function uploadMedia(blob, layoutId, fallbackType) {
   const layout = encodeURIComponent(layoutId);
   const response = await fetch(`/api/photos?layout=${layout}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'image/jpeg' },
+    headers: { 'Content-Type': blob.type || fallbackType },
     body: blob,
   });
   if (!response.ok) throw new Error(`Upload failed: ${response.status}`);
-  const data = await response.json();
-  // Use token-based URL so guests can only access photos they know the link to
+  return response.json();
+}
+
+export async function uploadPhoto(blob, layoutId) {
+  const data = await uploadMedia(blob, layoutId, 'image/jpeg');
   data.downloadUrl = `${window.location.origin}/photos/${data.token}`;
-  return data;
-}
-
-export async function uploadClipGif(gifBlob, sessionId, idx) {
-  const params = new URLSearchParams({ session: sessionId, idx });
-  const response = await fetch(`/api/gif/clip?${params}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'image/gif' },
-    body: gifBlob,
-  });
-  if (!response.ok) throw new Error(`Clip upload failed: ${response.status}`);
-}
-
-export async function requestGifCompose(sessionId, layoutId, layoutW, layoutH, zones) {
-  const response = await fetch('/api/gif/compose', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionId, layoutId, layoutW, layoutH, zones }),
-  });
-  if (!response.ok) throw new Error(`Compose failed: ${response.status}`);
-  const data = await response.json();
-  data.downloadUrl = `${window.location.origin}/photos/${data.token}`;
-  return data;
-}
-
-// All frames of one clip in a single request:
-// [uint32BE frameCount] then per frame [uint32BE byteLength][jpeg bytes]
-export async function uploadJpegFrameBatch(jpegBlobs, sessionId, clipIdx) {
-  const head = new ArrayBuffer(4);
-  new DataView(head).setUint32(0, jpegBlobs.length);
-  const parts = [head];
-  for (const blob of jpegBlobs) {
-    const len = new ArrayBuffer(4);
-    new DataView(len).setUint32(0, blob.size);
-    parts.push(len, blob);
-  }
-  const params = new URLSearchParams({ session: sessionId, clip: clipIdx });
-  const response = await fetch(`/api/gif/frames-batch?${params}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/octet-stream' },
-    body: new Blob(parts),
-  });
-  if (!response.ok) throw new Error(`Batch upload failed: ${response.status}`);
-}
-
-export async function uploadJpegFrame(jpegBlob, sessionId, clipIdx, frameIdx) {
-  const params = new URLSearchParams({ session: sessionId, clip: clipIdx, frame: frameIdx });
-  const response = await fetch(`/api/gif/frame?${params}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'image/jpeg' },
-    body: jpegBlob,
-  });
-  if (!response.ok) throw new Error(`Frame upload failed: ${response.status}`);
-}
-
-export async function requestGifComposeJpeg(sessionId, layoutId, layoutW, layoutH, zones) {
-  const response = await fetch('/api/gif/compose', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionId, layoutId, layoutW, layoutH, zones, mode: 'jpeg' }),
-  });
-  if (!response.ok) throw new Error(`Compose failed: ${response.status}`);
-  const data = await response.json();
-  const origin = window.location.origin;
-  for (const key of Object.keys(data)) {
-    data[key].downloadUrl = `${origin}/photos/${data[key].token}`;
-  }
   return data;
 }
 
 export async function uploadVideo(blob, layoutId = 'video') {
-  const layout = encodeURIComponent(layoutId);
-  const response = await fetch(`/api/photos?layout=${layout}`, {
-    method: 'POST',
-    headers: { 'Content-Type': blob.type || 'video/mp4' },
-    body: blob,
-  });
-  if (!response.ok) throw new Error(`Video upload failed: ${response.status}`);
-  const data = await response.json();
-  // QR code points to landing page (/view/) for save-to-Photos UX
+  const data = await uploadMedia(blob, layoutId, 'video/mp4');
+  // QR points at a landing page so iPhone guests can choose Save Video.
   data.downloadUrl = `${window.location.origin}/view/${data.token}`;
   data.rawUrl = `${window.location.origin}/photos/${data.token}`;
   return data;
 }
 
 export async function uploadGif(blob, layoutId = 'gif') {
-  const layout = encodeURIComponent(layoutId);
-  const response = await fetch(`/api/photos?layout=${layout}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'image/gif' },
-    body: blob,
-  });
-  if (!response.ok) throw new Error(`Upload failed: ${response.status}`);
-  const data = await response.json();
+  const data = await uploadMedia(blob, layoutId, 'image/gif');
   data.downloadUrl = `${window.location.origin}/photos/${data.token}`;
   return data;
 }
@@ -114,18 +36,17 @@ export async function renderQrCode(url, canvasEl) {
   const qr = qrcode(0, 'M');
   qr.addData(url);
   qr.make();
-  const img = new Image();
-  img.src = qr.createDataURL(8, 2);
-  await img.decode();
+  const image = new Image();
+  image.src = qr.createDataURL(8, 2);
+  await image.decode();
   const ctx = canvasEl.getContext('2d');
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(img, 0, 0, canvasEl.width, canvasEl.height);
+  ctx.drawImage(image, 0, 0, canvasEl.width, canvasEl.height);
 }
 
 export function clearQr(canvasEl) {
   if (!canvasEl) return;
-  const ctx = canvasEl.getContext('2d');
-  ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+  canvasEl.getContext('2d').clearRect(0, 0, canvasEl.width, canvasEl.height);
 }

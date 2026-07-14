@@ -41,6 +41,7 @@
 
 | ID | Owner | 結果 | 驗證 |
 | --- | --- | --- | --- |
+| CLN-001 | Codex | Removed obsolete Node/Vercel-era server, proxy, GIF API path, unused prototype assets, scripts, component, and 54 stale local packages. MP4 encoding now loads only during GIF capture. | `npm run build` passed; deployed Worker `a107a533-8e25-44cd-ab0e-f7064ad35cdf`; `/`, `/v2`, `/photo-booth/gallery`, and `/api/health` returned 200. |
 | DOC-000 | Codex | 建立共享規則、專案脈絡與任務板 | 已檢視現有專案結構；未修改產品程式碼 |
 | INT-001 | Codex | 已 review `template-test` 的 `/v2` 路由整合；新增的 import 與精確 `/v2` route 位於 catch-all `/*` 前，不影響 `/`、`/photo-booth/*` 或 `/photo-booth/camera`。 | `npm.cmd run build` 於 2026-07-14 通過；未修改、commit 或 push Claude 的成果。 |
 | V2-002 | Codex | 將 v2 相片牆限制為置中的內容寬度；加入 Bodoni Moda 英文標題與 Noto Serif TC 繁中排版，並換入使用者提供的正式邀請與承諾文字。禮物維持 SVG 暫代，等待使用者提供正式素材。 | `npm.cmd run build` 於 2026-07-14 通過；瀏覽器視覺連線目前不可用，待實機確認後再微調。 |

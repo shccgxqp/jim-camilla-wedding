@@ -2,20 +2,6 @@ function clamp(v) {
   return Math.round(Math.max(0, Math.min(255, v)));
 }
 
-// Only fires when Vite DEV mode is active (npm run dev). Silent on production builds.
-export function sendDebugLog(data) {
-  if (!import.meta.env.DEV) return;
-  fetch("/api/debug", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      ...data,
-      ua: navigator.userAgent.slice(0, 80),
-      t: Date.now(),
-    }),
-  }).catch(() => {});
-}
-
 // Pure pixel-level filter — no ctx.filter API, works on all browsers/iOS versions
 export function applyFilterToPixels(data, filterId) {
   if (!filterId || filterId === "none") return;
@@ -270,9 +256,6 @@ export async function captureFrame(
     ctx.drawImage(videoEl, sx, sy, cropW, cropH, 0, 0, captureW, captureH);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
-
-  console.log("[captureFrame]", debugData);
-  sendDebugLog(debugData);
 
   if (filterId && filterId !== "none") {
     const imageData = ctx.getImageData(0, 0, workCanvas.width, workCanvas.height);

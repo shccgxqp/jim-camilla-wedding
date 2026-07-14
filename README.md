@@ -1,34 +1,27 @@
-# Jim & Camilla — 2026.11.07
+# Jim & Camilla Wedding
 
-這個網站,是為了紀念我們的愛情而做的。
+婚禮網站與拍貼機，部署於 Cloudflare Workers。
 
-裡面有我們的故事、婚禮資訊,還有一台給大家玩的拍貼機 —— 掃個 QR code,拍張照,把這天的笑容帶回家。
+## 架構
 
-謝謝你來看這個網站,也謝謝你來參加我們的婚禮。
-願你也被好好愛著,也好好愛人。
+- React + Vite：婚禮頁、拍貼機、GIF 與 IG MP4
+- Cloudflare Workers：網站、上傳、QR 下載、照片管理
+- R2：私有媒體檔
+- D1：媒體索引
+- Durable Objects：iPhone 遠端相機配對
 
-—— Jim & Camilla
+## 開發
 
-## 這裡有什麼
-
-- **我們的故事** —— 從相遇到求婚,一路走來的七個章節
-- **婚禮資訊** —— 時間地點、交通方式、倒數計時
-- **RSVP** —— 線上回覆是否出席
-- **拍貼機** —— 現場選版型、拍照或錄影,自動合成相框,掃 QR code 就能把照片/影片存到手機
-- **iPhone 遠端鏡頭** —— iPad 當螢幕、iPhone 當鏡頭,拍出更好看的照片
-- **賓客下載頁** —— 手機、LINE、iOS/Android 都能順利存檔留念
-
----
-
-## Run
-
-```bash
+```powershell
 npm install
-npm start
+npm run cf:dev
 ```
 
-開 `http://localhost:3000`。正式上線需要 HTTPS(iPad/手機鏡頭權限要求)。
+部署前：
 
-## Configure
+```powershell
+npm run build
+npm run cf:deploy
+```
 
-編輯 `config/wedding.json`:新人姓名、婚期、主題色、倒數秒數、對外網址(`publicBaseUrl`,QR code 會用它)。
+詳細操作見 `docs/CLOUDFLARE_RUNBOOK.md`。

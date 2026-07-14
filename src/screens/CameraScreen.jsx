@@ -10,8 +10,8 @@ import { ZONES as F03_ZONES } from '../frames/frame03.js';
 import { ZONES as F04_ZONES } from '../frames/frame04.js';
 import { ZONES as F05_ZONES } from '../frames/frame05.js';
 import { ZONES as F06_ZONES } from '../frames/frame06.js';
-import { startClipRecorder, encodeClipGif, startClipRecorderHQ, encodeFramesAsJpegs, RECORD_MS, composeGifInBrowser, composeGifMp4InBrowser } from '../gif.js';
-import { uploadClipGif, requestGifCompose, uploadJpegFrameBatch, requestGifComposeJpeg, uploadGif, uploadVideo } from '../upload.js';
+import { startClipRecorderHQ, RECORD_MS, composeGifInBrowser, composeGifMp4InBrowser } from '../gif.js';
+import { uploadGif, uploadVideo } from '../upload.js';
 import { startVideoClipRecorder, composeMultiZoneVideo, VIDEO_DURATION_MS, getBestVideoMime, isIgCompatible } from '../video.js';
 import { filters } from '../data/constants.js';
 import { getBooth } from '../remote/booth.js';
@@ -339,6 +339,7 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
     }
   }
 
+  /* Retired Node GIF composition path. Cloudflare uses handleGifCaptureHQ below.
   async function handleGifCapture() {
     if (busy || (!isRemote && !streamRef.current)) return;
     if (isRemote && getBooth().status !== 'connected') {
@@ -400,6 +401,7 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
     }
   }
 
+  */
   async function handleGifCaptureHQ() {
     if (busy || (!isRemote && !streamRef.current)) return;
     if (isRemote && getBooth().status !== 'connected') {
@@ -410,10 +412,6 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
 
     const required = activeLayout.requiredShots;
     const fg = FRAME_GUIDE[activeLayout.id];
-    const sessionId = crypto.randomUUID
-      ? crypto.randomUUID().replace(/-/g, '')
-      : Math.random().toString(36).slice(2) + Date.now().toString(36);
-
     // smile duration inside runCountdown (700ms) already counts as recording time
     const SMILE_HOLD_MS = 700;
 
