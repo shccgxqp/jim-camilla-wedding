@@ -8,6 +8,10 @@
 
 目前沒有已認領任務。
 
+| ID | Task | Owner | Branch / worktree | Files / scope | Started | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| CF-001 | Cloudflare parallel deployment: Worker static site, R2/D1 photo storage migration, and feature verification | Codex | feat/cloudflare-parallel | `cloudflare/**`, `wrangler.jsonc`, upload/API integration, docs | 2026-07-14 | IN PROGRESS — waiting for Cloudflare OAuth; Vercel remains production |
+
 <!--
 新增格式：
 | ID | 任務 | Owner | 分支 / worktree | 鎖定檔案 | 開始時間 | 狀態 |
