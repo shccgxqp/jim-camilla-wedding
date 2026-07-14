@@ -10,7 +10,7 @@
 
 | ID | Task | Owner | Branch / worktree | Files / scope | Started | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| CF-001 | Cloudflare parallel deployment: Worker static site, R2/D1 photo storage migration, and feature verification | Codex | feat/cloudflare-parallel | `cloudflare/**`, `wrangler.jsonc`, upload/API integration, docs | 2026-07-14 | IN PROGRESS — OAuth and D1 ready; waiting for workers.dev + R2 activation; Vercel remains production |
+| CF-001 | Cloudflare parallel deployment: Worker static site, R2/D1 photo storage migration, and feature verification | Codex | feat/cloudflare-parallel | `cloudflare/**`, `wrangler.jsonc`, upload/API integration, docs | 2026-07-14 | IN PROGRESS — preview Worker, R2/D1, gallery, remote camera relay, GIF and IG MP4 upload are deployed; physical booth acceptance testing remains. Vercel remains production. |
 
 <!--
 新增格式：

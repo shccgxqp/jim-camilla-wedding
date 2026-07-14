@@ -1,4 +1,5 @@
 import { GIFEncoder, quantize, applyPalette } from 'gifenc';
+import { BufferTarget, CanvasSource, Mp4OutputFormat, Output } from 'mediabunny';
 import { applyFilterToPixels } from './camera.js';
 
 const CLIP_W = 480;
@@ -139,11 +140,11 @@ async function loadOverlay(url) {
   return image;
 }
 
-// Cloudflare-compatible GIF composition: only the finished GIF is uploaded.
-export async function composeGifInBrowser({ clips, zones, layoutW, layoutH, overlayUrl }) {
-  const outputW = Math.min(720, layoutW);
+function createComposition({ clips, zones, layoutW, layoutH, overlay }) {
+  const outputW = Math.round(Math.min(720, layoutW) / 2) * 2;
   const scale = outputW / layoutW;
-  const outputH = Math.round(layoutH * scale);
+  // H.264 requires even dimensions.
+  const outputH = Math.round(layoutH * scale / 2) * 2;
   const output = document.createElement('canvas');
   output.width = outputW;
   output.height = outputH;
@@ -152,12 +153,10 @@ export async function composeGifInBrowser({ clips, zones, layoutW, layoutH, over
   source.width = HQ_CLIP_W;
   source.height = HQ_CLIP_H;
   const sourceCtx = source.getContext('2d');
-  const overlay = await loadOverlay(overlayUrl);
   const frameCount = Math.max(...clips.map((frames) => frames.length), 0);
   if (!frameCount) throw new Error('No GIF frames were captured.');
 
-  const encoder = GIFEncoder();
-  for (let frameIndex = 0; frameIndex < frameCount; frameIndex++) {
+  function drawFrame(frameIndex) {
     outputCtx.fillStyle = '#ffffff';
     outputCtx.fillRect(0, 0, outputW, outputH);
     zones.forEach((zone, clipIndex) => {
@@ -178,10 +177,25 @@ export async function composeGifInBrowser({ clips, zones, layoutW, layoutH, over
       );
     });
     if (overlay) outputCtx.drawImage(overlay, 0, 0, outputW, outputH);
-    const pixels = outputCtx.getImageData(0, 0, outputW, outputH).data;
+  }
+
+  return { output, outputCtx, frameCount, drawFrame };
+}
+
+// Cloudflare-compatible GIF composition: only the finished GIF is uploaded.
+export async function composeGifInBrowser({ clips, zones, layoutW, layoutH, overlayUrl }) {
+  const overlay = await loadOverlay(overlayUrl);
+  const { output, outputCtx, frameCount, drawFrame } = createComposition({
+    clips, zones, layoutW, layoutH, overlay,
+  });
+
+  const encoder = GIFEncoder();
+  for (let frameIndex = 0; frameIndex < frameCount; frameIndex++) {
+    drawFrame(frameIndex);
+    const pixels = outputCtx.getImageData(0, 0, output.width, output.height).data;
     const palette = quantize(pixels, 256);
     const index = applyPalette(pixels, palette);
-    encoder.writeFrame(index, outputW, outputH, {
+    encoder.writeFrame(index, output.width, output.height, {
       palette,
       delay: FRAME_DELAY,
       repeat: frameIndex === 0 ? 0 : undefined,
@@ -190,4 +204,40 @@ export async function composeGifInBrowser({ clips, zones, layoutW, layoutH, over
   }
   encoder.finish();
   return new Blob([encoder.bytes()], { type: 'image/gif' });
+}
+
+// Uses the same GIF frames to make an Instagram-friendly H.264 MP4. This is
+// intentionally best-effort: WebCodecs is not available on every browser.
+export async function composeGifMp4InBrowser({ clips, zones, layoutW, layoutH, overlayUrl }) {
+  if (typeof VideoEncoder === 'undefined') {
+    throw new Error('This browser cannot create an MP4 video.');
+  }
+
+  const overlay = await loadOverlay(overlayUrl);
+  const { output: canvas, frameCount, drawFrame } = createComposition({
+    clips, zones, layoutW, layoutH, overlay,
+  });
+  const target = new BufferTarget();
+  const output = new Output({ format: new Mp4OutputFormat(), target });
+  const videoSource = new CanvasSource(canvas, {
+    codec: 'avc',
+    // A short 720px vertical clip stays small while retaining clear frame art.
+    bitrate: 2_000_000,
+    keyFrameInterval: 1.5,
+  });
+  output.addVideoTrack(videoSource, { frameRate: FPS });
+  await output.start();
+
+  // Four loops makes a 1.5-second GIF into a roughly six-second Story clip.
+  for (let loop = 0; loop < 4; loop++) {
+    for (let frameIndex = 0; frameIndex < frameCount; frameIndex++) {
+      drawFrame(frameIndex);
+      await videoSource.add((loop * frameCount + frameIndex) / FPS, 1 / FPS, {
+        keyFrame: frameIndex === 0,
+      });
+    }
+  }
+  await output.finalize();
+  if (!target.buffer) throw new Error('MP4 encoding produced no file.');
+  return new Blob([target.buffer], { type: 'video/mp4' });
 }

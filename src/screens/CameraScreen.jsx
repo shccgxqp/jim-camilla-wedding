@@ -10,8 +10,8 @@ import { ZONES as F03_ZONES } from '../frames/frame03.js';
 import { ZONES as F04_ZONES } from '../frames/frame04.js';
 import { ZONES as F05_ZONES } from '../frames/frame05.js';
 import { ZONES as F06_ZONES } from '../frames/frame06.js';
-import { startClipRecorder, encodeClipGif, startClipRecorderHQ, encodeFramesAsJpegs, RECORD_MS, composeGifInBrowser } from '../gif.js';
-import { uploadClipGif, requestGifCompose, uploadJpegFrameBatch, requestGifComposeJpeg, uploadGif } from '../upload.js';
+import { startClipRecorder, encodeClipGif, startClipRecorderHQ, encodeFramesAsJpegs, RECORD_MS, composeGifInBrowser, composeGifMp4InBrowser } from '../gif.js';
+import { uploadClipGif, requestGifCompose, uploadJpegFrameBatch, requestGifComposeJpeg, uploadGif, uploadVideo } from '../upload.js';
 import { startVideoClipRecorder, composeMultiZoneVideo, VIDEO_DURATION_MS, getBestVideoMime, isIgCompatible } from '../video.js';
 import { filters } from '../data/constants.js';
 import { getBooth } from '../remote/booth.js';
@@ -468,8 +468,25 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
         layoutH: activeLayout.height,
         overlayUrl: fg?.url,
       });
-      const result = await uploadGif(gifBlob, activeLayout.id);
-      onGifTaken(result);
+      const gifResult = await uploadGif(gifBlob, activeLayout.id);
+
+      // Keep GIF saving independent: a browser that cannot encode H.264 still
+      // finishes successfully and shows the normal GIF QR code.
+      try {
+        setStatus('正在製作 IG 專用影片…');
+        const mp4Blob = await composeGifMp4InBrowser({
+          clips,
+          zones: fg ? fg.zones : [],
+          layoutW: activeLayout.width,
+          layoutH: activeLayout.height,
+          overlayUrl: fg?.url,
+        });
+        const mp4Result = await uploadVideo(mp4Blob, `${activeLayout.id}-ig`);
+        onGifTaken({ gifModes: { high: gifResult, mp4: mp4Result } });
+      } catch (mp4Error) {
+        console.warn('IG MP4 was not created; keeping GIF result:', mp4Error);
+        onGifTaken(gifResult);
+      }
     } catch (err) {
       console.error('GIF HQ capture error:', err);
       setStatus('錄製失敗，請重試。');

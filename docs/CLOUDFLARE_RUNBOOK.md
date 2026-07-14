@@ -44,8 +44,8 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 
 ## Cloudflare implementation notes
 
-- GIF composition now occurs in the booth browser. Only the final animated GIF is uploaded to R2; Node filesystem, native image codecs, and `ffmpeg` are not used by the normal booth flow.
-- The browser GIF path produces one 720px-wide GIF variant. The previous Node-only high-quality and companion MP4 variants are intentionally not produced yet.
+- GIF composition now occurs in the booth browser. The final animated GIF and, when the device supports WebCodecs H.264, an IG-friendly MP4 are uploaded to R2; Node filesystem, native image codecs, and `ffmpeg` are not used by the normal booth flow.
+- The browser GIF path produces one 720px-wide GIF variant. Its companion MP4 loops the same frames four times (about six seconds) and is encoded as H.264 in an MP4 container. If that device cannot encode H.264, the saved GIF remains available and the capture still succeeds.
 - Remote camera signaling uses one Cloudflare Durable Object per pairing code.
 
 ## Feature status (2026-07-14)
@@ -58,14 +58,14 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 | Local-device video upload → storage | Ready to device-test | Uses the same `/api/photos` route. Byte-range reads returned 206, required for video playback. |
 | QR / private media download page | Ready | `/photos/:token` and `/view/:token` returned 200 in remote smoke testing. |
 | Online photo management | Ready | `/photo-booth/gallery` lists up to 500 private R2 media records by date, supports newest/oldest order, and can delete an object plus its D1 record after PIN verification. |
-| GIF composition | Ready to device-test | Browser composes the framed animation and uploads only the final GIF to R2. Verify visual quality and tablet performance; the old companion MP4 variant is not included. |
+| GIF composition + IG MP4 | Ready to device-test | Browser composes the framed animation, uploads the GIF, then best-effort encodes/uploads a H.264 MP4 companion for IG. Verify both files and composition time on the actual booth device. |
 | iPhone remote camera pairing | Ready to device-test | `/ws?pair=CODE` now uses one Durable Object per four-character pairing code. Deployed WebSocket tests passed for pairing, signaling relay, and two isolated simultaneous host/camera pairs. Physical phone camera + WebRTC test remains required. |
 
 ## Acceptance checks before DNS cutover
 
 1. iPad camera: each layout, filters, photo upload, QR, and phone download.
 2. Video upload and mobile playback/download, including byte-range streaming.
-3. GIF capture on every layout, including visual quality and composition time on the actual booth device.
+3. GIF capture on every layout, including visual quality, composition time, and IG MP4 download/playback on the actual booth device.
 4. iPhone remote camera pairing, reconnect, and capture.
 5. Run a private-event test with actual tablet and iPhone over the venue-like network.
 
