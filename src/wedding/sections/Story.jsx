@@ -80,6 +80,7 @@ const TILTS = [-3.2, 2.4, -1.8, 3.0, -2.2, 2.8, -1.5];
 const STACK_GAP = 28;
 const ENTER_LEN = 1.0;
 const DWELL_LEN = 0.7;
+const RELEASE_DWELL = 0.16;
 
 function buildSegs(n) {
   const segs = [];
@@ -122,6 +123,8 @@ export default function Story() {
   const dotRefs = useRef([]);
   const N = CHAPTERS.length;
   const { segs, totalU } = buildSegs(N);
+  const settlePoints = segs.filter((s) => s.cpS === s.cpE).map((s) => s.s);
+  settlePoints.push(totalU);
 
   useEffect(() => {
     let ticking = false;
@@ -135,8 +138,7 @@ export default function Story() {
       const total = trackH - vh;
       const scrolled = clamp(-rect.top, 0, total);
       const p = total > 0 ? scrolled / total : 0;
-      const dwell = 0.16;
-      const eff = clamp(p / (1 - dwell), 0, 1);
+      const eff = clamp(p / (1 - RELEASE_DWELL), 0, 1);
       const cardP = rawToCardP(eff, segs, totalU, N);
 
       cardRefs.current.forEach((card, i) => {
@@ -219,6 +221,15 @@ export default function Story() {
         ref={trackRef}
         style={{ "--story-track-h": `${N * 192}vh` }}
       >
+        {settlePoints.map((u, i) => (
+          <i
+            key={i}
+            className="w-snap"
+            style={{
+              top: `calc(${(u / totalU).toFixed(4)} * ${(1 - RELEASE_DWELL).toFixed(2)} * (var(--story-track-h) - 100vh))`,
+            }}
+          />
+        ))}
         <div className="w-story-sticky">
           <h2 className="w-story-bigtitle">our story</h2>
 
