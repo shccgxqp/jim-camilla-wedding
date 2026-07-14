@@ -3,7 +3,7 @@
 ## Deployment model
 
 - Cloudflare is the only deployment platform for this project.
-- The Worker named `jim-camilla-wedding-preview` serves the Vite build, D1 indexes private media tokens, and R2 stores the media bytes.
+- The Worker named `jim-camilla-wedding` serves the Vite build, D1 indexes private media tokens, and R2 stores the media bytes.
 - The former Vercel configuration has been removed. Do not add Vercel rewrites or deployment settings back to this repository.
 
 ## One-time Cloudflare account setup
@@ -32,7 +32,7 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 
 ## Verified on Cloudflare preview
 
-- Preview URL: `https://jim-camilla-wedding-preview.shccgxqp.workers.dev`
+- Worker URL: `https://jim-camilla-wedding.shccgxqp.workers.dev`
 - The Worker has private `MEDIA` (R2) and `DB` (D1) bindings.
 - `/api/health`, `/api/config`, `/`, and `/v2` returned 200.
 - PNG upload to R2, secure `/photos/:token`, and `/view/:token` returned 200.

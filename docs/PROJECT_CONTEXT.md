@@ -27,7 +27,7 @@ npm run cf:dev
 npm run cf:deploy
 ```
 
-- 預覽 Worker：`https://jim-camilla-wedding-preview.shccgxqp.workers.dev`
+- Cloudflare Worker：`https://jim-camilla-wedding.shccgxqp.workers.dev`
 - 部署及帳戶操作請依照 `docs/CLOUDFLARE_RUNBOOK.md`。
 - `server.cjs` 是舊版本機 Node 開發伺服器，不是正式部署路徑。
 
