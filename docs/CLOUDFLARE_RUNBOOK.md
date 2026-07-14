@@ -46,6 +46,18 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 - iPhone remote camera signaling relies on a process-local `ws` server. It needs a Durable Object before Cloudflare cutover.
 - Existing Node server remains the fallback for these features until their replacements pass device tests.
 
+## Feature status (2026-07-14)
+
+| Feature | Cloudflare preview status | Evidence / next action |
+| --- | --- | --- |
+| Wedding pages (`/`, `/v2`) | Ready | Remote HTTP smoke test returned 200. |
+| Photo-booth settings and frames | Ready | `/api/config`, `/api/backgrounds`, and static background assets returned 200. |
+| Local-device photo capture → storage | Ready to device-test | The browser posts composed image data to `/api/photos`; an end-to-end R2 upload and secure read test passed. |
+| Local-device video upload → storage | Ready to device-test | Uses the same `/api/photos` route. Byte-range reads returned 206, required for video playback. |
+| QR / private media download page | Ready | `/photos/:token` and `/view/:token` returned 200 in remote smoke testing. |
+| GIF composition | Blocked | Worker intentionally returns 501; requires a Cloudflare-compatible composition design. |
+| iPhone remote camera pairing | Blocked | Both clients connect to `/ws`, but the deployed Worker has no WebSocket endpoint; `GET /ws` is currently the SPA HTML fallback, not an Upgrade response. Requires Durable Object signaling. |
+
 ## Acceptance checks before DNS cutover
 
 1. iPad camera: each layout, filters, photo upload, QR, and phone download.
