@@ -107,6 +107,23 @@ button {
   margin-bottom: 2px;
 }
 
+.top-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gallery-quick-link {
+  padding: 7px 12px;
+  border: 1px solid rgba(228, 201, 126, 0.45);
+  border-radius: 999px;
+  color: var(--cream);
+  background: rgba(228, 201, 126, 0.1);
+  text-decoration: none;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
 .date-pill {
   font-family: var(--font-mono);
   font-size: 0.72rem;
@@ -1430,6 +1447,8 @@ button:disabled {
   .top-bar {
     padding: 10px 16px;
   }
+  .top-bar-actions { gap: 7px; }
+  .gallery-quick-link { padding: 6px 9px; font-size: 0.66rem; }
 
   h1 {
     @apply text-[1.7rem];

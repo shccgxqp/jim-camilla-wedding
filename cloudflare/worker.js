@@ -202,6 +202,7 @@ async function adminAuthorized(request, env) {
 }
 
 async function requireAdmin(request, env) {
+  if (env.GALLERY_PIN_BYPASS === "true") return null;
   if (!env.ADMIN_PIN) return json({ error: "Gallery administration is not configured." }, 503);
   if (!(await adminAuthorized(request, env))) return json({ error: "Invalid administrator PIN." }, 401);
   return null;
@@ -281,6 +282,7 @@ export default {
     if (request.method === "GET" && pathname === "/api/health") return noStore(json({ ok: true, storage: Boolean(env.MEDIA && env.DB) }));
     if (request.method === "GET" && pathname === "/api/config") return noStore(json(mediaConfig()));
     if (request.method === "GET" && pathname === "/api/backgrounds") return noStore(json({ backgrounds: BACKGROUNDS.map((filename) => ({ filename, url: `/backgrounds/${encodeURIComponent(filename)}` })) }));
+    if (request.method === "GET" && pathname === "/api/gallery-config") return noStore(json({ pinRequired: env.GALLERY_PIN_BYPASS !== "true" }));
     if (request.method === "GET" && pathname === "/api/media") return listMedia(request, env);
     if (request.method === "DELETE" && pathname.startsWith("/api/media/")) return deleteMedia(request, env, decodeURIComponent(pathname.slice(11)));
     if (pathname === "/ws") {

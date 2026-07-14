@@ -75,3 +75,4 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 - Viewing the collection and deleting an item both require the Worker secret `ADMIN_PIN` through the management page.
 - The PIN is a Cloudflare Worker secret, never committed to the repository. Change it with `npx wrangler secret put ADMIN_PIN` when needed.
 - Deletion is permanent: the R2 object and its D1 metadata row are both removed.
+- The current preview has `GALLERY_PIN_BYPASS: "true"` for development convenience. Before production deployment, remove this variable (or set it to `"false"`) and verify anonymous gallery requests return 401.

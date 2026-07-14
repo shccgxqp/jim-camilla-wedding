@@ -20,6 +20,8 @@ export default function PhotoGalleryPage() {
   const [loading, setLoading] = useState(false);
   const [order, setOrder] = useState('newest');
   const [authenticated, setAuthenticated] = useState(false);
+  const [configured, setConfigured] = useState(false);
+  const [pinRequired, setPinRequired] = useState(true);
 
   async function loadGallery(candidate = pin) {
     setLoading(true);
@@ -42,7 +44,16 @@ export default function PhotoGalleryPage() {
 
   useEffect(() => {
     const stored = sessionStorage.getItem('pb_admin_pin');
-    if (stored) loadGallery(stored);
+    fetch('/api/gallery-config')
+      .then((response) => response.json())
+      .then((data) => {
+        const required = data.pinRequired !== false;
+        setPinRequired(required);
+        setConfigured(true);
+        if (!required) loadGallery('');
+        else if (stored) loadGallery(stored);
+      })
+      .catch(() => setConfigured(true));
   }, []);
 
   async function remove(item) {
@@ -78,11 +89,13 @@ export default function PhotoGalleryPage() {
         <a className="gallery-back" href="/photo-booth">返回拍貼機</a>
       </header>
 
-      {!unlocked ? (
+      {!configured ? (
+        <div className="gallery-empty">正在載入相簿設定…</div>
+      ) : !unlocked ? (
         <form className="gallery-lock" onSubmit={(event) => { event.preventDefault(); loadGallery(pin); }}>
-          <h2>管理員驗證</h2>
-          <p>輸入主辦人 PIN 後，可線上瀏覽及刪除照片與影片。</p>
-          <input
+          <h2>{pinRequired ? '管理員驗證' : '照片管理'}</h2>
+          <p>{pinRequired ? '輸入主辦人 PIN 後，可線上瀏覽及刪除照片與影片。' : '開發模式：PIN 暫時關閉。'}</p>
+          {pinRequired && <input
             value={pin}
             onChange={(event) => setPin(event.target.value)}
             type="password"
@@ -90,8 +103,8 @@ export default function PhotoGalleryPage() {
             autoComplete="current-password"
             placeholder="管理員 PIN"
             required
-          />
-          <button disabled={loading}>{loading ? '驗證中…' : '開啟相簿'}</button>
+          />}
+          <button disabled={loading}>{loading ? '載入中…' : '開啟相簿'}</button>
           {message && <div className="gallery-message">{message}</div>}
         </form>
       ) : (
