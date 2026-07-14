@@ -38,13 +38,14 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 - `/api/health`, `/api/config`, `/`, and `/v2` returned 200.
 - PNG upload to R2, secure `/photos/:token`, and `/view/:token` returned 200.
 - A byte-range request returned 206 with correct `Content-Range`; this is required for video streaming.
+- A chunked upload without `Content-Length` recorded the actual R2 object size in D1 correctly.
 - Smoke-test objects and their D1 rows were deleted after each test.
 
-## Not yet Cloudflare-compatible
+## Cloudflare implementation notes
 
-- GIF frame composition relies on Node filesystem, native image codecs, and `ffmpeg`; it is deliberately 501 in the preview Worker.
-- iPhone remote camera signaling relies on a process-local `ws` server. It needs a Durable Object before Cloudflare cutover.
-- Existing Node server remains the fallback for these features until their replacements pass device tests.
+- GIF composition now occurs in the booth browser. Only the final animated GIF is uploaded to R2; Node filesystem, native image codecs, and `ffmpeg` are not used by the normal booth flow.
+- The browser GIF path produces one 720px-wide GIF variant. The previous Node-only high-quality and companion MP4 variants are intentionally not produced yet.
+- Remote camera signaling uses one Cloudflare Durable Object per pairing code.
 
 ## Feature status (2026-07-14)
 
@@ -55,13 +56,13 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 | Local-device photo capture → storage | Ready to device-test | The browser posts composed image data to `/api/photos`; an end-to-end R2 upload and secure read test passed. |
 | Local-device video upload → storage | Ready to device-test | Uses the same `/api/photos` route. Byte-range reads returned 206, required for video playback. |
 | QR / private media download page | Ready | `/photos/:token` and `/view/:token` returned 200 in remote smoke testing. |
-| GIF composition | Blocked | Worker intentionally returns 501; requires a Cloudflare-compatible composition design. |
+| GIF composition | Ready to device-test | Browser composes the framed animation and uploads only the final GIF to R2. Verify visual quality and tablet performance; the old companion MP4 variant is not included. |
 | iPhone remote camera pairing | Ready to device-test | `/ws?pair=CODE` now uses one Durable Object per four-character pairing code. Deployed WebSocket tests passed for pairing, signaling relay, and two isolated simultaneous host/camera pairs. Physical phone camera + WebRTC test remains required. |
 
 ## Acceptance checks before DNS cutover
 
 1. iPad camera: each layout, filters, photo upload, QR, and phone download.
 2. Video upload and mobile playback/download, including byte-range streaming.
-3. GIF capture and all quality modes.
+3. GIF capture on every layout, including visual quality and composition time on the actual booth device.
 4. iPhone remote camera pairing, reconnect, and capture.
 5. Run a private-event test with actual tablet and iPhone over the venue-like network.

@@ -10,8 +10,8 @@ import { ZONES as F03_ZONES } from '../frames/frame03.js';
 import { ZONES as F04_ZONES } from '../frames/frame04.js';
 import { ZONES as F05_ZONES } from '../frames/frame05.js';
 import { ZONES as F06_ZONES } from '../frames/frame06.js';
-import { startClipRecorder, encodeClipGif, startClipRecorderHQ, encodeFramesAsJpegs, RECORD_MS } from '../gif.js';
-import { uploadClipGif, requestGifCompose, uploadJpegFrameBatch, requestGifComposeJpeg } from '../upload.js';
+import { startClipRecorder, encodeClipGif, startClipRecorderHQ, encodeFramesAsJpegs, RECORD_MS, composeGifInBrowser } from '../gif.js';
+import { uploadClipGif, requestGifCompose, uploadJpegFrameBatch, requestGifComposeJpeg, uploadGif } from '../upload.js';
 import { startVideoClipRecorder, composeMultiZoneVideo, VIDEO_DURATION_MS, getBestVideoMime, isIgCompatible } from '../video.js';
 import { filters } from '../data/constants.js';
 import { getBooth } from '../remote/booth.js';
@@ -459,7 +459,7 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
     // smile duration inside runCountdown (700ms) already counts as recording time
     const SMILE_HOLD_MS = 700;
 
-    const uploadPromises = [];
+    const clips = [];
 
     try {
       for (let i = 0; i < required; i++) {
@@ -492,12 +492,7 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
 
         const frames = recorder ? recorder.stop() : [];
 
-        const clipIdx = i;
-        uploadPromises.push(
-          encodeFramesAsJpegs(frames).then(jpegBlobs =>
-            uploadJpegFrameBatch(jpegBlobs, sessionId, clipIdx)
-          )
-        );
+        clips.push(frames);
 
         if (i < required - 1) {
           setStatus(`第 ${i + 1} 格完成，繼續下一格...`);
@@ -508,22 +503,15 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
       // Enter the composing screen immediately — uploads finish while it shows
       setCountdown(null);
       onGifComposing();
-      await Promise.all(uploadPromises);
-
-      let result;
-      try {
-        result = await requestGifComposeJpeg(
-          sessionId,
-          activeLayout.id,
-          activeLayout.width,
-          activeLayout.height,
-          fg ? fg.zones : [],
-        );
-      } catch (composeErr) {
-        console.error('GIF HQ compose error:', composeErr);
-        result = null;
-      }
-      onGifTaken({ gifModes: result });
+      const gifBlob = await composeGifInBrowser({
+        clips,
+        zones: fg ? fg.zones : [],
+        layoutW: activeLayout.width,
+        layoutH: activeLayout.height,
+        overlayUrl: fg?.url,
+      });
+      const result = await uploadGif(gifBlob, activeLayout.id);
+      onGifTaken(result);
     } catch (err) {
       console.error('GIF HQ capture error:', err);
       setStatus('錄製失敗，請重試。');

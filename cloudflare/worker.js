@@ -196,12 +196,12 @@ async function uploadMedia(request, env) {
   const token = crypto.randomUUID();
   const filename = filenameFor(token, extension);
   const objectKey = `photos/${new Date().toISOString().slice(0, 10)}/${token}.${extension}`;
-  await env.MEDIA.put(objectKey, request.body, {
+  const storedObject = await env.MEDIA.put(objectKey, request.body, {
     httpMetadata: { contentType: contentType.split(";", 1)[0] },
   });
   try {
     await env.DB.prepare("INSERT INTO media (token, object_key, filename, content_type, size, created_at) VALUES (?, ?, ?, ?, ?, ?)")
-      .bind(token, objectKey, filename, contentType.split(";", 1)[0], length, new Date().toISOString())
+      .bind(token, objectKey, filename, contentType.split(";", 1)[0], storedObject.size, new Date().toISOString())
       .run();
   } catch (error) {
     await env.MEDIA.delete(objectKey);

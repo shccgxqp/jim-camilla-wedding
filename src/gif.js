@@ -110,3 +110,84 @@ export function encodeClipGif(frames) {
   encoder.finish();
   return new Blob([encoder.bytes()], { type: 'image/gif' });
 }
+
+function drawCover(ctx, source, x, y, width, height) {
+  const srcW = source.width;
+  const srcH = source.height;
+  const srcRatio = srcW / srcH;
+  const targetRatio = width / height;
+  let sx = 0;
+  let sy = 0;
+  let sw = srcW;
+  let sh = srcH;
+  if (srcRatio > targetRatio) {
+    sw = srcH * targetRatio;
+    sx = (srcW - sw) / 2;
+  } else {
+    sh = srcW / targetRatio;
+    sy = (srcH - sh) / 2;
+  }
+  ctx.drawImage(source, sx, sy, sw, sh, x, y, width, height);
+}
+
+async function loadOverlay(url) {
+  if (!url) return null;
+  const image = new Image();
+  image.decoding = 'async';
+  image.src = url;
+  await image.decode();
+  return image;
+}
+
+// Cloudflare-compatible GIF composition: only the finished GIF is uploaded.
+export async function composeGifInBrowser({ clips, zones, layoutW, layoutH, overlayUrl }) {
+  const outputW = Math.min(720, layoutW);
+  const scale = outputW / layoutW;
+  const outputH = Math.round(layoutH * scale);
+  const output = document.createElement('canvas');
+  output.width = outputW;
+  output.height = outputH;
+  const outputCtx = output.getContext('2d', { willReadFrequently: true });
+  const source = document.createElement('canvas');
+  source.width = HQ_CLIP_W;
+  source.height = HQ_CLIP_H;
+  const sourceCtx = source.getContext('2d');
+  const overlay = await loadOverlay(overlayUrl);
+  const frameCount = Math.max(...clips.map((frames) => frames.length), 0);
+  if (!frameCount) throw new Error('No GIF frames were captured.');
+
+  const encoder = GIFEncoder();
+  for (let frameIndex = 0; frameIndex < frameCount; frameIndex++) {
+    outputCtx.fillStyle = '#ffffff';
+    outputCtx.fillRect(0, 0, outputW, outputH);
+    zones.forEach((zone, clipIndex) => {
+      const frames = clips[clipIndex];
+      if (!frames?.length) return;
+      sourceCtx.putImageData(
+        new ImageData(new Uint8ClampedArray(frames[frameIndex % frames.length]), HQ_CLIP_W, HQ_CLIP_H),
+        0,
+        0,
+      );
+      drawCover(
+        outputCtx,
+        source,
+        Math.round(zone.x * scale),
+        Math.round(zone.y * scale),
+        Math.round(zone.w * scale),
+        Math.round(zone.h * scale),
+      );
+    });
+    if (overlay) outputCtx.drawImage(overlay, 0, 0, outputW, outputH);
+    const pixels = outputCtx.getImageData(0, 0, outputW, outputH).data;
+    const palette = quantize(pixels, 256);
+    const index = applyPalette(pixels, palette);
+    encoder.writeFrame(index, outputW, outputH, {
+      palette,
+      delay: FRAME_DELAY,
+      repeat: frameIndex === 0 ? 0 : undefined,
+    });
+    if (frameIndex % 2 === 1) await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  encoder.finish();
+  return new Blob([encoder.bytes()], { type: 'image/gif' });
+}
