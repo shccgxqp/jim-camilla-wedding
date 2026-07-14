@@ -2,6 +2,7 @@ node_modules/
 dist/
 .claude/
 uploads/
+.wrangler/
 .env
 圖/
 # editor/tool backups & sources

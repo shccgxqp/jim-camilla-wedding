@@ -15,5 +15,11 @@
       "database_name": "jim-camilla-wedding-preview",
       "database_id": "2a226c81-b434-4268-9499-09eb0b631b8c"
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "jim-camilla-wedding-media-preview"
+    }
   ]
 }

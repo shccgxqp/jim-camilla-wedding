@@ -31,6 +31,15 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 - Static photo-booth backgrounds return 200.
 - Upload returns 503 until the private R2 binding exists (expected safe failure).
 
+## Verified on Cloudflare preview
+
+- Preview URL: `https://jim-camilla-wedding-preview.shccgxqp.workers.dev`
+- The Worker has private `MEDIA` (R2) and `DB` (D1) bindings.
+- `/api/health`, `/api/config`, `/`, and `/v2` returned 200.
+- PNG upload to R2, secure `/photos/:token`, and `/view/:token` returned 200.
+- A byte-range request returned 206 with correct `Content-Range`; this is required for video streaming.
+- Smoke-test objects and their D1 rows were deleted after each test.
+
 ## Not yet Cloudflare-compatible
 
 - GIF frame composition relies on Node filesystem, native image codecs, and `ffmpeg`; it is deliberately 501 in the preview Worker.
