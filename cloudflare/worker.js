@@ -185,6 +185,48 @@ async function findMedia(env, token) {
     .first();
 }
 
+async function adminAuthorized(request, env) {
+  const expected = env.ADMIN_PIN;
+  const supplied = request.headers.get("x-admin-pin") || "";
+  if (!expected || !supplied) return false;
+  const encode = new TextEncoder();
+  const [expectedHash, suppliedHash] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encode.encode(expected)),
+    crypto.subtle.digest("SHA-256", encode.encode(supplied)),
+  ]);
+  const left = new Uint8Array(expectedHash);
+  const right = new Uint8Array(suppliedHash);
+  let difference = 0;
+  for (let index = 0; index < left.length; index++) difference |= left[index] ^ right[index];
+  return difference === 0;
+}
+
+async function requireAdmin(request, env) {
+  if (!env.ADMIN_PIN) return json({ error: "Gallery administration is not configured." }, 503);
+  if (!(await adminAuthorized(request, env))) return json({ error: "Invalid administrator PIN." }, 401);
+  return null;
+}
+
+async function listMedia(request, env) {
+  const denied = await requireAdmin(request, env);
+  if (denied) return denied;
+  const results = await env.DB.prepare(
+    "SELECT token, filename, content_type, size, created_at FROM media ORDER BY created_at DESC LIMIT 500",
+  ).all();
+  return noStore(json({ media: results.results || [] }));
+}
+
+async function deleteMedia(request, env, token) {
+  const denied = await requireAdmin(request, env);
+  if (denied) return denied;
+  if (!/^[0-9a-f-]{36}$/i.test(token)) return json({ error: "Invalid media token." }, 400);
+  const row = await env.DB.prepare("SELECT object_key FROM media WHERE token = ?").bind(token).first();
+  if (!row) return json({ error: "Not found." }, 404);
+  await env.MEDIA.delete(row.object_key);
+  await env.DB.prepare("DELETE FROM media WHERE token = ?").bind(token).run();
+  return json({ ok: true });
+}
+
 async function uploadMedia(request, env) {
   if (!env.DB || !env.MEDIA) return json({ error: "Media storage is not configured yet." }, 503);
   const contentType = request.headers.get("content-type") || "";
@@ -239,6 +281,8 @@ export default {
     if (request.method === "GET" && pathname === "/api/health") return noStore(json({ ok: true, storage: Boolean(env.MEDIA && env.DB) }));
     if (request.method === "GET" && pathname === "/api/config") return noStore(json(mediaConfig()));
     if (request.method === "GET" && pathname === "/api/backgrounds") return noStore(json({ backgrounds: BACKGROUNDS.map((filename) => ({ filename, url: `/backgrounds/${encodeURIComponent(filename)}` })) }));
+    if (request.method === "GET" && pathname === "/api/media") return listMedia(request, env);
+    if (request.method === "DELETE" && pathname.startsWith("/api/media/")) return deleteMedia(request, env, decodeURIComponent(pathname.slice(11)));
     if (pathname === "/ws") {
       const pair = url.searchParams.get("pair")?.toUpperCase() || "";
       if (!validPairCode(pair)) return new Response("Invalid pair code.", { status: 400 });

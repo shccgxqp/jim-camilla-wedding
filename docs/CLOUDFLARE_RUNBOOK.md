@@ -40,6 +40,7 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 - A byte-range request returned 206 with correct `Content-Range`; this is required for video streaming.
 - A chunked upload without `Content-Length` recorded the actual R2 object size in D1 correctly.
 - Smoke-test objects and their D1 rows were deleted after each test.
+- Gallery administration route `/photo-booth/gallery` returned 200. Anonymous and incorrect PIN requests returned 401; authorized list and delete were verified end-to-end.
 
 ## Cloudflare implementation notes
 
@@ -56,6 +57,7 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 | Local-device photo capture → storage | Ready to device-test | The browser posts composed image data to `/api/photos`; an end-to-end R2 upload and secure read test passed. |
 | Local-device video upload → storage | Ready to device-test | Uses the same `/api/photos` route. Byte-range reads returned 206, required for video playback. |
 | QR / private media download page | Ready | `/photos/:token` and `/view/:token` returned 200 in remote smoke testing. |
+| Online photo management | Ready | `/photo-booth/gallery` lists up to 500 private R2 media records by date, supports newest/oldest order, and can delete an object plus its D1 record after PIN verification. |
 | GIF composition | Ready to device-test | Browser composes the framed animation and uploads only the final GIF to R2. Verify visual quality and tablet performance; the old companion MP4 variant is not included. |
 | iPhone remote camera pairing | Ready to device-test | `/ws?pair=CODE` now uses one Durable Object per four-character pairing code. Deployed WebSocket tests passed for pairing, signaling relay, and two isolated simultaneous host/camera pairs. Physical phone camera + WebRTC test remains required. |
 
@@ -66,3 +68,10 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 3. GIF capture on every layout, including visual quality and composition time on the actual booth device.
 4. iPhone remote camera pairing, reconnect, and capture.
 5. Run a private-event test with actual tablet and iPhone over the venue-like network.
+
+## Photo management
+
+- URL: `/photo-booth/gallery`
+- Viewing the collection and deleting an item both require the Worker secret `ADMIN_PIN` through the management page.
+- The PIN is a Cloudflare Worker secret, never committed to the repository. Change it with `npx wrangler secret put ADMIN_PIN` when needed.
+- Deletion is permanent: the R2 object and its D1 metadata row are both removed.

@@ -165,6 +165,17 @@ export default function SettingsScreen({ onBack }) {
 
           {/* Debug section */}
           <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid rgba(228,201,126,0.2)' }}>
+            <button
+              type="button"
+              onClick={() => { window.location.href = '/photo-booth/gallery'; }}
+              style={{ width: '100%', padding: '13px 16px', borderRadius: 10, border: '1.5px solid rgba(228,201,126,0.5)', background: 'rgba(228,201,126,0.12)', color: '#F4EAD6', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+            >
+              照片管理
+            </button>
+          </div>
+
+          {/* Debug section */}
+          <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid rgba(228,201,126,0.2)' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 13.5 }}>
               <input type="checkbox" checked={showRaw} onChange={toggleRaw} style={{ width: 18, height: 18 }} />
               顯示「RAW 測試」診斷版型（開發用，賓客模式請關閉）
