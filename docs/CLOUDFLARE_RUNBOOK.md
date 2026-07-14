@@ -76,3 +76,10 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 - The PIN is a Cloudflare Worker secret, never committed to the repository. Change it with `npx wrangler secret put ADMIN_PIN` when needed.
 - Deletion is permanent: the R2 object and its D1 metadata row are both removed.
 - The current preview has `GALLERY_PIN_BYPASS: "true"` for development convenience. Before production deployment, remove this variable (or set it to `"false"`) and verify anonymous gallery requests return 401.
+
+## Booth performance baseline
+
+- Camera preview is capped at 30fps and the camera requests an ideal 30fps stream; final captured-photo resolution is unchanged.
+- Preview canvas no longer resizes itself on every animation frame, and unused camera-debug React updates were removed.
+- Captured images use asynchronous `canvas.toBlob()` encoding before conversion to the existing composition format, reducing the main-thread pause after each shutter.
+- These changes target browser main-thread contention. Adding another server does not improve countdown smoothness because the countdown and preview render on the booth device.

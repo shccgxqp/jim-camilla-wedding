@@ -110,9 +110,9 @@ export async function startCamera(streamRef, videoEl, facingMode, onError, aspec
     // iPhone/desktop: landscape ideal → iOS gives 1080×1920 portrait; desktop gets 1920×1080
     const videoConstraints = isIPad
       ? aspectRatio === '9:16'
-        ? { facingMode, width: { ideal: 1080 }, height: { ideal: 1920 } }
-        : { facingMode, width: { ideal: 1080 }, height: { ideal: 1440 } }
-      : { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } };
+        ? { facingMode, width: { ideal: 1080 }, height: { ideal: 1920 }, frameRate: { ideal: 30 } }
+        : { facingMode, width: { ideal: 1080 }, height: { ideal: 1440 }, frameRate: { ideal: 30 } }
+      : { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } };
     const stream = await navigator.mediaDevices.getUserMedia({
       video: videoConstraints,
       audio: false,
@@ -153,7 +153,7 @@ export async function runCountdown(seconds, onTick) {
   onTick(null);
 }
 
-export function captureFrame(
+export async function captureFrame(
   videoEl,
   workCanvas,
   activeLayout,
@@ -280,9 +280,16 @@ export function captureFrame(
     ctx.putImageData(imageData, 0, 0);
   }
 
-  return format === "jpeg"
-    ? workCanvas.toDataURL("image/jpeg", 0.92)
-    : workCanvas.toDataURL("image/png");
+  const mimeType = format === "jpeg" ? "image/jpeg" : "image/png";
+  const quality = format === "jpeg" ? 0.92 : undefined;
+  const blob = await new Promise((resolve) => workCanvas.toBlob(resolve, mimeType, quality));
+  if (!blob) throw new Error("Unable to encode captured photo.");
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error("Unable to read captured photo."));
+    reader.readAsDataURL(blob);
+  });
 }
 
 export async function switchCamera(

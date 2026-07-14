@@ -156,12 +156,12 @@ export default function RemoteCameraPage() {
       }
     }
 
-    function handleCaptureCmd(msg) {
+    async function handleCaptureCmd(msg) {
       const v = videoRef.current;
       const c = canvasRef.current;
       try {
         const fakeLayout = { id: msg.layoutId || 'remote', shotRatio: msg.shotRatio || '3/4' };
-        const dataUrl = captureFrame(v, c, fakeLayout, msg.filterId, msg.shotNum, '3:4', 'jpeg');
+        const dataUrl = await captureFrame(v, c, fakeLayout, msg.filterId, msg.shotNum, '3:4', 'jpeg');
         sendCaptured(msg.shotNum, dataUrl);
         setShotsTaken((n) => n + 1);
         const f = flashRef.current;

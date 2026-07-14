@@ -52,8 +52,6 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
   const [status, setStatus] = useState('看鏡頭，倒數後會自動拍下。');
   const [shotCount, setShotCount] = useState(0);
   const [previewPx, setPreviewPx] = useState(0);
-  const [camInfo, setCamInfo] = useState({});
-  const [captureLog, setCaptureLog] = useState([]);
   const [captureMode, setCaptureMode] = useState('photo'); // 'photo' | 'video' | 'gif'
   const [aspectRatio, setAspectRatio] = useState('3:4'); // iPad only: '3:4' | '9:16'
   const aspectRatioRef = useRef('3:4');
@@ -169,49 +167,24 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
   }, [aspectRatio]);
 
   useEffect(() => {
-    const id = setInterval(() => {
-      const v = videoRef.current;
-      const track = streamRef.current?.getVideoTracks?.()[0];
-      const s = track?.getSettings?.() ?? {};
-      const vW = v?.videoWidth ?? 0;
-      const vH = v?.videoHeight ?? 0;
-      const devPortrait = window.screen.height > window.screen.width;
-      setCamInfo({
-        videoWidth: vW || '?',
-        videoHeight: vH || '?',
-        orientation: devPortrait ? 'portrait' : 'landscape',
-        trackW: s.width ?? '?',
-        trackH: s.height ?? '?',
-        frameRate: s.frameRate ? s.frameRate.toFixed(1) : '?',
-        resizeMode: s.resizeMode ?? '?',
-        facingMode: s.facingMode ?? facingMode,
-        trackState: track?.readyState ?? '?',
-      });
-    }, 800);
-    return () => clearInterval(id);
-  }, [facingMode]);
-
-
-
-  useEffect(() => {
+    let lastDrawAt = 0;
+    const minFrameInterval = 1000 / 30;
     function drawLoop() {
+      rafRef.current = requestAnimationFrame(drawLoop);
+      const now = performance.now();
+      if (now - lastDrawAt < minFrameInterval) return;
+      lastDrawAt = now;
       const v = videoRef.current;
       const c = canvasPreviewRef.current;
       if (!v || !c || v.readyState < 2) {
-        rafRef.current = requestAnimationFrame(drawLoop);
         return;
       }
       // Sync canvas buffer to CSS display size every frame — prevents stretch on mount/resize
-      if (c.offsetWidth && c.offsetHeight) {
-        if (c.width !== c.offsetWidth) c.width = c.offsetWidth;
-        if (c.height !== c.offsetHeight) c.height = c.offsetHeight;
-      }
       const vW = v.videoWidth, vH = v.videoHeight;
       const cw = c.width, ch = c.height;
-      if (!cw || !ch) { rafRef.current = requestAnimationFrame(drawLoop); return; }
+      if (!cw || !ch) return;
       const ctx = c.getContext('2d');
       ctx.save();
-      ctx.filter = v.style.filter || 'none';
       ctx.clearRect(0, 0, cw, ch);
       const isIPadPreview = !isRemote && (/iPad/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
       if (vW < vH) {
@@ -260,7 +233,6 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
         ctx.setTransform(1, 0, 0, 1, 0, 0);
       }
       ctx.restore();
-      rafRef.current = requestAnimationFrame(drawLoop);
     }
     rafRef.current = requestAnimationFrame(drawLoop);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
@@ -283,20 +255,6 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
         const shotNum = currentShots.length + 1;
         setStatus(`第 ${shotNum} 張，準備好了嗎？`);
         await runCountdown(config.countdownSeconds, setCountdown);
-        const v = videoRef.current;
-        const track = streamRef.current?.getVideoTracks?.()[0];
-        const ts = track?.getSettings?.() ?? {};
-        const logEntry = {
-          shot: shotNum,
-          vW: v?.videoWidth, vH: v?.videoHeight,
-          tW: ts.width, tH: ts.height,
-          fps: ts.frameRate?.toFixed(1),
-          resize: ts.resizeMode,
-          rs: v?.readyState,
-          aspectRatio,
-          src: isRemote ? 'iphone-remote' : 'local',
-        };
-        setCaptureLog(prev => [...prev.slice(-5), logEntry]);
         // Flash fires at countdown end — runs in parallel with the (possibly slow)
         // remote transfer so the shot feels instant.
         const flashPromise = triggerFlash(flashRef.current);
@@ -311,7 +269,7 @@ export default function CameraScreen({ onAllShotsTaken, onGifTaken, onGifComposi
           });
           dataUrl = res.dataUrl;
         } else {
-          dataUrl = captureFrame(videoRef.current, workCanvas, activeLayout, activeFilter, shotNum, aspectRatio);
+          dataUrl = await captureFrame(videoRef.current, workCanvas, activeLayout, activeFilter, shotNum, aspectRatio);
         }
         await flashPromise;
         currentShots = [...currentShots, dataUrl];
