@@ -1,11 +1,10 @@
-# Cloudflare migration runbook
+# Cloudflare production runbook
 
 ## Deployment model
 
-- The current Vercel site stays live until Cloudflare acceptance testing is complete.
-- `feat/cloudflare-parallel` deploys an isolated Worker named `jim-camilla-wedding-preview`.
-- The Worker serves the Vite build, D1 indexes private media tokens, and R2 stores the media bytes.
-- No custom domain or Vercel DNS record is changed during preview.
+- Cloudflare is the only deployment platform for this project.
+- The Worker named `jim-camilla-wedding-preview` serves the Vite build, D1 indexes private media tokens, and R2 stores the media bytes.
+- The former Vercel configuration has been removed. Do not add Vercel rewrites or deployment settings back to this repository.
 
 ## One-time Cloudflare account setup
 
@@ -62,7 +61,7 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 | GIF composition + IG MP4 | Ready to device-test | Browser composes the framed animation, uploads the GIF, then best-effort encodes/uploads a H.264 MP4 companion for IG. Verify both files and composition time on the actual booth device. |
 | iPhone remote camera pairing | Ready to device-test | `/ws?pair=CODE` now uses one Durable Object per four-character pairing code. Deployed WebSocket tests passed for pairing, signaling relay, and two isolated simultaneous host/camera pairs. Physical phone camera + WebRTC test remains required. |
 
-## Acceptance checks before DNS cutover
+## Acceptance checks before custom-domain cutover
 
 1. iPad camera: each layout, filters, photo upload, QR, and phone download.
 2. Video upload and mobile playback/download, including byte-range streaming.

@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+> **Current deployment note (2026-07-14):** Cloudflare Workers + R2 + D1 is the sole production architecture. `server.cjs` and references to Vercel/Netlify below are legacy local-development notes only. Read `docs/PROJECT_CONTEXT.md` and `docs/CLOUDFLARE_RUNBOOK.md` before making deployment or API changes.
+
 本文件提供 Claude Code 在此專案中的開發指引。
 
 ## 專案常駐 Agent
