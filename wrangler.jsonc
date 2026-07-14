@@ -7,7 +7,7 @@
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*", "/photos/*", "/view/*"]
+    "run_worker_first": ["/api/*", "/photos/*", "/view/*", "/ws"]
   },
   "d1_databases": [
     {
@@ -20,6 +20,20 @@
     {
       "binding": "MEDIA",
       "bucket_name": "jim-camilla-wedding-media-preview"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "REMOTE_CAMERA_SESSION",
+        "class_name": "RemoteCameraSession"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1-remote-camera-session",
+      "new_sqlite_classes": ["RemoteCameraSession"]
     }
   ]
 }

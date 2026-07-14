@@ -177,7 +177,7 @@ export default function RemoteCameraPage() {
 
     function connectWs() {
       const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-      const ws = new WebSocket(`${proto}://${location.host}/ws`);
+      const ws = new WebSocket(`${proto}://${location.host}/ws?pair=${encodeURIComponent(pairCode)}`);
       wsRef.current = ws;
       ws.onopen = () => {
         sendJson({ type: 'hello', role: 'camera', pair: pairCode });

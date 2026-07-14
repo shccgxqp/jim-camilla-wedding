@@ -56,7 +56,7 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 | Local-device video upload → storage | Ready to device-test | Uses the same `/api/photos` route. Byte-range reads returned 206, required for video playback. |
 | QR / private media download page | Ready | `/photos/:token` and `/view/:token` returned 200 in remote smoke testing. |
 | GIF composition | Blocked | Worker intentionally returns 501; requires a Cloudflare-compatible composition design. |
-| iPhone remote camera pairing | Blocked | Both clients connect to `/ws`, but the deployed Worker has no WebSocket endpoint; `GET /ws` is currently the SPA HTML fallback, not an Upgrade response. Requires Durable Object signaling. |
+| iPhone remote camera pairing | Ready to device-test | `/ws?pair=CODE` now uses one Durable Object per four-character pairing code. Deployed WebSocket tests passed for pairing, signaling relay, and two isolated simultaneous host/camera pairs. Physical phone camera + WebRTC test remains required. |
 
 ## Acceptance checks before DNS cutover
 

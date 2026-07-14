@@ -110,7 +110,7 @@ function createBooth() {
     closed = false;
     if (ws && (ws.readyState === 0 || ws.readyState === 1)) return;
     const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    ws = new WebSocket(`${proto}://${location.host}/ws`);
+    ws = new WebSocket(`${proto}://${location.host}/ws?pair=${encodeURIComponent(api.pairCode)}`);
     ws.onopen = () => {
       sendJson({ type: 'hello', role: 'booth', pair: api.pairCode });
       setStatus('waiting');

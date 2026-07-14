@@ -1,3 +1,4 @@
+import { DurableObject } from "cloudflare:workers";
 import weddingConfig from "../config/wedding.json";
 
 const BACKGROUNDS = [
@@ -83,6 +84,100 @@ function parseRange(rangeHeader, size) {
   return { offset: start, length: Math.min(end, size - 1) - start + 1 };
 }
 
+function validPairCode(value) {
+  return /^[A-HJ-NP-Z2-9]{4}$/.test(value || "");
+}
+
+function parseMessage(message) {
+  try {
+    if (typeof message === "string") return JSON.parse(message);
+    return JSON.parse(new TextDecoder().decode(message));
+  } catch {
+    return null;
+  }
+}
+
+export class RemoteCameraSession extends DurableObject {
+  async fetch(request) {
+    if (request.method !== "GET" || request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
+      return new Response("Expected a WebSocket upgrade.", { status: 426 });
+    }
+    const pair = new URL(request.url).searchParams.get("pair")?.toUpperCase() || "";
+    if (!validPairCode(pair)) return new Response("Invalid pair code.", { status: 400 });
+
+    const [client, server] = Object.values(new WebSocketPair());
+    server.serializeAttachment({ pair, role: null });
+    this.ctx.acceptWebSocket(server);
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  peers(role, except = null) {
+    return this.ctx.getWebSockets().filter((socket) => {
+      const state = socket.deserializeAttachment();
+      return socket !== except && state?.role === role;
+    });
+  }
+
+  send(socket, payload) {
+    try {
+      socket.send(typeof payload === "string" ? payload : JSON.stringify(payload));
+    } catch {}
+  }
+
+  notify(role, payload, except = null) {
+    this.peers(role, except).forEach((socket) => this.send(socket, payload));
+  }
+
+  webSocketMessage(socket, message) {
+    const state = socket.deserializeAttachment();
+    const msg = parseMessage(message);
+    if (!state || !msg) return;
+
+    if (msg.type === "ping") {
+      this.send(socket, { type: "pong" });
+      return;
+    }
+
+    if (msg.type === "hello") {
+      const role = msg.role === "booth" ? "booth" : msg.role === "camera" ? "camera" : null;
+      const claimedPair = typeof msg.pair === "string" ? msg.pair.toUpperCase() : "";
+      if (!role || claimedPair !== state.pair) {
+        this.send(socket, { type: "pair-rejected" });
+        socket.close(1008, "Invalid pairing");
+        return;
+      }
+
+      this.peers(role, socket).forEach((existing) => {
+        this.send(existing, { type: "replaced" });
+        existing.close(4001, "Replaced by a newer connection");
+      });
+      socket.serializeAttachment({ ...state, role });
+      const peerRole = role === "booth" ? "camera" : "booth";
+      const peers = this.peers(peerRole);
+      if (peers.length) {
+        this.send(socket, { type: "peer-joined" });
+        peers.forEach((peer) => this.send(peer, { type: "peer-joined" }));
+      }
+      return;
+    }
+
+    if (!state.role) return;
+    const peerRole = state.role === "booth" ? "camera" : "booth";
+    this.peers(peerRole).forEach((peer) => this.send(peer, message));
+  }
+
+  webSocketClose(socket) {
+    const state = socket.deserializeAttachment();
+    if (!state?.role) return;
+    const peerRole = state.role === "booth" ? "camera" : "booth";
+    this.notify(peerRole, { type: "peer-left" });
+  }
+
+  webSocketError(socket) {
+    try { socket.close(1011, "WebSocket error"); } catch {}
+  }
+}
+
 async function findMedia(env, token) {
   if (!env.DB || !env.MEDIA) return null;
   return env.DB.prepare("SELECT token, object_key, filename, content_type, size FROM media WHERE token = ?")
@@ -144,6 +239,12 @@ export default {
     if (request.method === "GET" && pathname === "/api/health") return noStore(json({ ok: true, storage: Boolean(env.MEDIA && env.DB) }));
     if (request.method === "GET" && pathname === "/api/config") return noStore(json(mediaConfig()));
     if (request.method === "GET" && pathname === "/api/backgrounds") return noStore(json({ backgrounds: BACKGROUNDS.map((filename) => ({ filename, url: `/backgrounds/${encodeURIComponent(filename)}` })) }));
+    if (pathname === "/ws") {
+      const pair = url.searchParams.get("pair")?.toUpperCase() || "";
+      if (!validPairCode(pair)) return new Response("Invalid pair code.", { status: 400 });
+      if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") return new Response("Expected a WebSocket upgrade.", { status: 426 });
+      return env.REMOTE_CAMERA_SESSION.getByName(pair).fetch(request);
+    }
     if (request.method === "POST" && pathname === "/api/photos") return uploadMedia(request, env);
     if (request.method === "GET" && pathname.startsWith("/photos/")) return serveMedia(request, env, decodeURIComponent(pathname.slice(8)));
     if (request.method === "GET" && pathname.startsWith("/view/")) {
