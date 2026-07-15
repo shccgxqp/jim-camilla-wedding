@@ -12,7 +12,7 @@ export default function TimelineV2() {
         <div className="wv2-timeline-head">
           <h2>The Day's
             <br />Events</h2>
-          <div className="date">DECEMBER 7, 2026</div>
+          <div className="date">NOVEMBER 7, 2026</div>
         </div>
         <div className="wv2-timeline-list">
           <dl>

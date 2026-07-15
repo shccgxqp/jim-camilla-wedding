@@ -6,6 +6,7 @@ import Gallery from '../wedding/sections/Gallery.jsx';
 import Lightbox from '../wedding/modals/Lightbox.jsx';
 import CoverV2 from './sections/CoverV2.jsx';
 import PromiseV2 from './sections/PromiseV2.jsx';
+import CountdownV2 from './sections/CountdownV2.jsx';
 import VenueInfoV2 from './sections/VenueInfoV2.jsx';
 import TimelineV2 from './sections/TimelineV2.jsx';
 import ClosingV2 from './sections/ClosingV2.jsx';
@@ -18,6 +19,7 @@ export default function WeddingSiteV2() {
       <CoverV2 />
       <PromiseV2 />
       <Story />
+      <CountdownV2 />
       <VenueInfoV2 />
       <TimelineV2 />
       <Gallery onLightbox={setLightboxSrc} />
