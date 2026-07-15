@@ -1,3 +1,5 @@
+import FeatureQuickLinks from '../../components/FeatureQuickLinks.jsx';
+
 const DOVES = (
   <svg className="wv2-closing-dove" viewBox="0 0 100 50" fill="none" aria-hidden="true">
     <path
@@ -22,6 +24,7 @@ export default function ClosingV2() {
       <div className="wv2-closing-photo">
         <img src="/wedding/images/gallery-3-bouquet.jpg" alt="緊握彼此的手與捧花" />
       </div>
+      <FeatureQuickLinks tone="dark" />
     </section>
   );
 }

@@ -93,7 +93,23 @@ async function ensureMediaSchema(env) {
   await env.DB.prepare(
     "CREATE TABLE IF NOT EXISTS media (token TEXT PRIMARY KEY, object_key TEXT NOT NULL UNIQUE, filename TEXT NOT NULL, content_type TEXT NOT NULL, size INTEGER NOT NULL, created_at TEXT NOT NULL)",
   ).run();
+  await Promise.all([
+    addMediaColumn(env, "kind", "TEXT NOT NULL DEFAULT 'booth'"),
+    addMediaColumn(env, "collection", "TEXT NOT NULL DEFAULT 'booth'"),
+    addMediaColumn(env, "caption", "TEXT NOT NULL DEFAULT ''"),
+    addMediaColumn(env, "live_wall", "INTEGER NOT NULL DEFAULT 0"),
+    addMediaColumn(env, "sort_order", "INTEGER NOT NULL DEFAULT 0"),
+  ]);
   await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_media_created_at ON media(created_at)").run();
+  await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_media_kind_live_wall ON media(kind, live_wall, sort_order, created_at)").run();
+}
+
+async function addMediaColumn(env, name, definition) {
+  try {
+    await env.DB.prepare(`ALTER TABLE media ADD COLUMN ${name} ${definition}`).run();
+  } catch (error) {
+    if (!String(error?.message || error).includes("duplicate column")) throw error;
+  }
 }
 
 function extensionFor(contentType) {
@@ -103,6 +119,14 @@ function extensionFor(contentType) {
 function filenameFor(token, extension) {
   const stamp = new Date().toISOString().replaceAll(/[-:.TZ]/g, "").slice(0, 14);
   return `wedding-${stamp}-${token.slice(0, 8)}.${extension}`;
+}
+
+function safeOriginalName(value) {
+  return String(value || "photo")
+    .replaceAll(/[\\/:*?"<>|]/g, "-")
+    .replaceAll(/\s+/g, " ")
+    .trim()
+    .slice(0, 120) || "photo";
 }
 
 function escapeHtml(value) {
@@ -304,9 +328,11 @@ async function listMedia(request, env) {
   const denied = await requireAdmin(request, env);
   if (denied) return denied;
   await ensureMediaSchema(env);
-  const results = await env.DB.prepare(
-    "SELECT token, filename, content_type, size, created_at FROM media ORDER BY created_at DESC LIMIT 500",
-  ).all();
+  const kind = new URL(request.url).searchParams.get("kind");
+  const statement = kind === "library" || kind === "booth"
+    ? env.DB.prepare("SELECT token, filename, content_type, size, created_at, kind, collection, caption, live_wall, sort_order FROM media WHERE kind = ? ORDER BY created_at DESC LIMIT 500").bind(kind)
+    : env.DB.prepare("SELECT token, filename, content_type, size, created_at, kind, collection, caption, live_wall, sort_order FROM media ORDER BY created_at DESC LIMIT 500");
+  const results = await statement.all();
   return noStore(json({ media: results.results || [] }));
 }
 
@@ -352,6 +378,87 @@ async function updateLiveWallState(request, env) {
   return noStore(json({ state }));
 }
 
+async function listLibrary(request, env) {
+  const denied = await requireAdmin(request, env);
+  if (denied) return denied;
+  await ensureMediaSchema(env);
+  const results = await env.DB.prepare(
+    "SELECT token, filename, content_type, size, created_at, collection, caption, live_wall, sort_order FROM media WHERE kind = 'library' ORDER BY sort_order ASC, created_at DESC LIMIT 1000",
+  ).all();
+  return noStore(json({ media: results.results || [] }));
+}
+
+async function listLiveWallLibrary(env) {
+  await ensureMediaSchema(env);
+  const results = await env.DB.prepare(
+    "SELECT token, filename, content_type, caption FROM media WHERE kind = 'library' AND live_wall = 1 ORDER BY sort_order ASC, created_at DESC LIMIT 500",
+  ).all();
+  return noStore(json({
+    media: (results.results || []).map((item) => ({
+      ...item,
+      url: `/photos/${encodeURIComponent(item.token)}`,
+    })),
+  }));
+}
+
+async function uploadLibraryMedia(request, env) {
+  const denied = await requireAdmin(request, env);
+  if (denied) return denied;
+  if (!env.DB || !env.MEDIA) return json({ error: "Media storage is not configured yet." }, 503);
+  await ensureMediaSchema(env);
+
+  const form = await request.formData();
+  const file = form.get("file");
+  if (!file || typeof file === "string" || !file.stream) return json({ error: "Missing file." }, 400);
+  const extension = extensionFor(file.type || "");
+  if (!extension) return json({ error: "Unsupported file type." }, 415);
+  if (file.size > 25 * 1024 * 1024) return json({ error: "Upload is larger than 25 MB." }, 413);
+
+  const token = crypto.randomUUID();
+  const contentType = (file.type || "").split(";", 1)[0];
+  const filename = safeOriginalName(file.name || filenameFor(token, extension));
+  const objectKey = `library/${new Date().toISOString().slice(0, 10)}/${token}.${extension}`;
+  const collection = truncateText(form.get("collection") || "wedding", 32) || "wedding";
+  const caption = truncateText(form.get("caption") || "", 120);
+  const liveWall = form.get("live_wall") === "true" || form.get("live_wall") === "1" ? 1 : 0;
+  const sortOrder = Number.parseInt(String(form.get("sort_order") || "0"), 10) || 0;
+
+  const storedObject = await env.MEDIA.put(objectKey, file.stream(), {
+    httpMetadata: { contentType },
+  });
+  try {
+    await env.DB.prepare(
+      "INSERT INTO media (token, object_key, filename, content_type, size, created_at, kind, collection, caption, live_wall, sort_order) VALUES (?, ?, ?, ?, ?, ?, 'library', ?, ?, ?, ?)",
+    ).bind(token, objectKey, filename, contentType, storedObject.size, new Date().toISOString(), collection, caption, liveWall, sortOrder).run();
+  } catch (error) {
+    await env.MEDIA.delete(objectKey);
+    throw error;
+  }
+  return json({ token, filename, content_type: contentType, size: storedObject.size, collection, caption, live_wall: liveWall, sort_order: sortOrder, url: `/photos/${token}` }, 201);
+}
+
+async function updateLibraryMedia(request, env, token) {
+  const denied = await requireAdmin(request, env);
+  if (denied) return denied;
+  if (!/^[0-9a-f-]{36}$/i.test(token)) return json({ error: "Invalid media token." }, 400);
+  await ensureMediaSchema(env);
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body." }, 400);
+  }
+  const collection = truncateText(body.collection || "wedding", 32) || "wedding";
+  const caption = truncateText(body.caption || "", 120);
+  const liveWall = body.live_wall === true || body.live_wall === 1 ? 1 : 0;
+  const sortOrder = Number.parseInt(String(body.sort_order || "0"), 10) || 0;
+  const result = await env.DB.prepare(
+    "UPDATE media SET collection = ?, caption = ?, live_wall = ?, sort_order = ? WHERE token = ? AND kind = 'library'",
+  ).bind(collection, caption, liveWall, sortOrder, token).run();
+  if (!result.meta?.changes) return json({ error: "Not found." }, 404);
+  return noStore(json({ ok: true, token, collection, caption, live_wall: liveWall, sort_order: sortOrder }));
+}
+
 async function uploadMedia(request, env) {
   if (!env.DB || !env.MEDIA) return json({ error: "Media storage is not configured yet." }, 503);
   await ensureMediaSchema(env);
@@ -368,7 +475,7 @@ async function uploadMedia(request, env) {
     httpMetadata: { contentType: contentType.split(";", 1)[0] },
   });
   try {
-    await env.DB.prepare("INSERT INTO media (token, object_key, filename, content_type, size, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+    await env.DB.prepare("INSERT INTO media (token, object_key, filename, content_type, size, created_at, kind, collection, live_wall) VALUES (?, ?, ?, ?, ?, ?, 'booth', 'booth', 0)")
       .bind(token, objectKey, filename, contentType.split(";", 1)[0], storedObject.size, new Date().toISOString())
       .run();
   } catch (error) {
@@ -410,6 +517,10 @@ export default {
     if (request.method === "GET" && pathname === "/api/gallery-config") return noStore(json({ pinRequired: env.GALLERY_PIN_BYPASS !== "true" }));
     if (request.method === "GET" && pathname === "/api/media") return listMedia(request, env);
     if (request.method === "DELETE" && pathname.startsWith("/api/media/")) return deleteMedia(request, env, decodeURIComponent(pathname.slice(11)));
+    if (request.method === "GET" && pathname === "/api/library") return listLibrary(request, env);
+    if (request.method === "POST" && pathname === "/api/library") return uploadLibraryMedia(request, env);
+    if ((request.method === "PATCH" || request.method === "PUT") && pathname.startsWith("/api/library/")) return updateLibraryMedia(request, env, decodeURIComponent(pathname.slice(13)));
+    if (request.method === "GET" && pathname === "/api/live-wall-library") return listLiveWallLibrary(env);
     if (request.method === "GET" && pathname === "/api/live-wall-state") return getLiveWallState(env);
     if ((request.method === "PUT" || request.method === "POST") && pathname === "/api/live-wall-state") return updateLiveWallState(request, env);
     if (pathname === "/ws") {

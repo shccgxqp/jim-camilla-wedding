@@ -41,6 +41,8 @@
 
 | ID | Owner | 結果 | 驗證 |
 | --- | --- | --- | --- |
+| NAV-001 | Codex | 在 `/` 與 `/v2` 頁面最底部新增臨時「展示與管理快捷入口」，包含正式首頁、新版頁面、拍貼機、遠端相機、照片管理、投影幕、投影控制、照片庫，方便展示與測試期間快速跳轉。 | `npm.cmd run build` 於 2026-07-15 通過；`git diff --check` 無錯誤。 |
+| LIB-001 | Codex | 新增 `/photo-library` 照片庫管理後台：可拖拉多檔上傳到 Cloudflare R2，D1 記錄分類、備註、排序與是否加入投影牆；新增 `/api/library`、`/api/library/:token`、`/api/live-wall-library`；投影牆改為優先讀照片庫素材，若沒有照片庫資料才 fallback 到目前 GitHub 靜態照片。 | `npm.cmd run build` 於 2026-07-15 通過；`git diff --check` 無錯誤；本機 Wrangler `/photo-library` 回 200；`GET /api/library`、`POST /api/library`、`GET /api/live-wall-library`、`GET /photos/:token`、`PATCH /api/library/:token`、`DELETE /api/media/:token` 均成功；本機測試上傳檔已刪除。 |
 | WALL-004 | Codex | 改善 `/live-wall` 投影任務卡文字對比：主標、說明與 CTA 改為高對比深色系，避免投影時融入淺色卡片背景；改善 `/live-wall-control` 手機控制頁背景、文字、表單與按鈕對比；新增「自由任務卡」快捷選項，會先套入自訂任務卡草稿，待工作人員填寫後再送出投影。 | `npm.cmd run build` 於 2026-07-15 通過；`git diff --check` 無錯誤；重啟本機 Wrangler 後 `/live-wall` 與 `/live-wall-control` 回 200；`GET /api/live-wall-state` 成功讀回自由任務卡測試狀態。 |
 | WALL-003 | Codex | 新增手機控制的晚宴投影後台 `/live-wall-control`，可切換照片牆、提示卡、任務卡與流程提示；新增 `/api/live-wall-state` 狀態 API，以 D1 `app_state` 保存目前投影模式；`/live-wall` 每 4 秒同步狀態並在同一投影框顯示卡片。另讓本機空 D1 自動建立 `media` 表，避免 `/api/media` 於初次預覽回 500。 | `npm.cmd run build` 於 2026-07-15 通過；`git diff --check` 無錯誤；本機 Wrangler `/live-wall` 與 `/live-wall-control` 回 200；`GET /api/live-wall-state`、`PUT card`、`PUT photo` 均成功；`GET /api/media` 於空本機 D1 回 `{"media":[]}`。 |
 | WALL-002 | Codex | 修正 `/live-wall` 本機預覽：當本機前端伺服器未提供 `/api/gallery-config` 或 `/api/media` JSON，而是回傳 SPA HTML 時，開發環境會自動進入預覽模式，先用既有婚紗／故事照正常輪播；正式環境仍保留現場照片 API 錯誤提示。 | `npm.cmd run build` 於 2026-07-15 通過；`git diff --check` 無錯誤。 |

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import './live-wall.css';
 
-const STOCK_PHOTOS = [
+const FALLBACK_STOCK_PHOTOS = [
   '/wedding/images/gallery-1-registration.jpg',
   '/wedding/images/gallery-2-certificate.jpg',
   '/wedding/images/gallery-3-bouquet.jpg',
@@ -27,6 +27,8 @@ const POLL_MS = 12_000;
 const STATE_POLL_MS = 4_000;
 const DEFAULT_WALL_STATE = { mode: 'photo' };
 
+const fallbackStock = FALLBACK_STOCK_PHOTOS.map((src) => ({ src }));
+
 export default function LiveWallPage() {
   const [pin, setPin] = useState(() => sessionStorage.getItem('live_wall_pin') || '');
   const [pinRequired, setPinRequired] = useState(true);
@@ -34,7 +36,8 @@ export default function LiveWallPage() {
   const [access, setAccess] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [message, setMessage] = useState('');
-  const [slide, setSlide] = useState({ kind: 'memory', src: STOCK_PHOTOS[0], key: 0 });
+  const [stockPhotos, setStockPhotos] = useState(fallbackStock);
+  const [slide, setSlide] = useState({ kind: 'memory', src: fallbackStock[0].src, key: 0 });
   const [wallState, setWallState] = useState(DEFAULT_WALL_STATE);
   const scheduleRef = useRef({ stockIndex: 1, stockSinceBooth: 0, boothQueue: [], knownTokens: new Set() });
   const pinRef = useRef(pin);
@@ -51,9 +54,28 @@ export default function LiveWallPage() {
     return true;
   }, []);
 
+  const loadStockLibrary = useCallback(async () => {
+    try {
+      const response = await fetch('/api/live-wall-library', { cache: 'no-store' });
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) throw new Error('尚未提供照片庫 API。');
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || '無法讀取照片庫。');
+      const library = (data.media || []).map((item) => ({ src: item.url, mediaType: item.content_type }));
+      if (!library.length) return;
+      setStockPhotos(library);
+      scheduleRef.current.stockIndex = 1;
+      setSlide((current) => current.kind === 'memory'
+        ? { kind: 'memory', src: library[0].src, mediaType: library[0].mediaType, key: current.key + 1 }
+        : current);
+    } catch {
+      setStockPhotos((current) => (current.length ? current : fallbackStock));
+    }
+  }, []);
+
   const loadMedia = useCallback(async (candidate = pinRef.current) => {
     try {
-      const response = await fetch('/api/media', {
+      const response = await fetch('/api/media?kind=booth', {
         headers: candidate ? { 'X-Admin-Pin': candidate } : {},
         cache: 'no-store',
       });
@@ -131,6 +153,13 @@ export default function LiveWallPage() {
 
   useEffect(() => {
     if (!access) return undefined;
+    loadStockLibrary();
+    const poll = window.setInterval(loadStockLibrary, 60_000);
+    return () => window.clearInterval(poll);
+  }, [access, loadStockLibrary]);
+
+  useEffect(() => {
+    if (!access) return undefined;
     loadWallState();
     const poll = window.setInterval(loadWallState, STATE_POLL_MS);
     return () => window.clearInterval(poll);
@@ -155,14 +184,15 @@ export default function LiveWallPage() {
         return;
       }
 
-      const src = STOCK_PHOTOS[schedule.stockIndex % STOCK_PHOTOS.length];
+      const stock = stockPhotos.length ? stockPhotos : fallbackStock;
+      const item = stock[schedule.stockIndex % stock.length];
       schedule.stockIndex += 1;
       schedule.stockSinceBooth += 1;
-      setSlide((current) => ({ kind: 'memory', src, key: current.key + 1 }));
+      setSlide((current) => ({ kind: 'memory', src: item.src, mediaType: item.mediaType, key: current.key + 1 }));
     };
     const timer = window.setInterval(advance, DISPLAY_MS);
     return () => window.clearInterval(timer);
-  }, [access]);
+  }, [access, stockPhotos]);
 
   if (!ready) return <main className="live-wall live-wall-loading">正在準備晚宴記憶牆…</main>;
 
