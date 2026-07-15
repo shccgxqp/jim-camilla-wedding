@@ -123,8 +123,6 @@ export default function Story() {
   const dotRefs = useRef([]);
   const N = CHAPTERS.length;
   const { segs, totalU } = buildSegs(N);
-  const settlePoints = segs.filter((s) => s.cpS === s.cpE).map((s) => s.s);
-  settlePoints.push(totalU);
 
   useEffect(() => {
     let ticking = false;
@@ -221,15 +219,6 @@ export default function Story() {
         ref={trackRef}
         style={{ "--story-track-h": `${N * 192}vh` }}
       >
-        {settlePoints.map((u, i) => (
-          <i
-            key={i}
-            className="w-snap"
-            style={{
-              top: `calc(${(u / totalU).toFixed(4)} * ${(1 - RELEASE_DWELL).toFixed(2)} * (var(--story-track-h) - 100vh))`,
-            }}
-          />
-        ))}
         <div className="w-story-sticky">
           <h2 className="w-story-bigtitle">our story</h2>
 

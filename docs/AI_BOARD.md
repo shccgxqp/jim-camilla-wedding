@@ -41,6 +41,7 @@
 
 | ID | Owner | 結果 | 驗證 |
 | --- | --- | --- | --- |
+| WEB-002 | Codex | 移除手機版套用於整個文件的 scroll snap，以及 STORY 的隱藏 snap 定位點；保留原本 sticky 卡片動畫。這可避免離開 STORY 後被瀏覽器吸回最後一個章節而暫停或跳動。 | `npm.cmd run build` 於 2026-07-15 通過；`git diff --check` 無錯誤。 |
 | CLN-001 | Codex | Removed obsolete Node/Vercel-era server, proxy, GIF API path, unused prototype assets, scripts, component, and 54 stale local packages. MP4 encoding now loads only during GIF capture. | `npm run build` passed; deployed Worker `a107a533-8e25-44cd-ab0e-f7064ad35cdf`; `/`, `/v2`, `/photo-booth/gallery`, and `/api/health` returned 200. |
 | DOC-000 | Codex | 建立共享規則、專案脈絡與任務板 | 已檢視現有專案結構；未修改產品程式碼 |
 | INT-001 | Codex | 已 review `template-test` 的 `/v2` 路由整合；新增的 import 與精確 `/v2` route 位於 catch-all `/*` 前，不影響 `/`、`/photo-booth/*` 或 `/photo-booth/camera`。 | `npm.cmd run build` 於 2026-07-14 通過；未修改、commit 或 push Claude 的成果。 |
