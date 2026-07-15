@@ -21,6 +21,20 @@ const MIME_TO_EXTENSION = {
   "video/webm": "webm",
 };
 
+const LIVE_WALL_STATE_KEY = "live-wall-state";
+const DEFAULT_LIVE_WALL_STATE = {
+  mode: "photo",
+  cardType: "notice",
+  title: "",
+  subtitle: "",
+  kicker: "",
+  cta: "",
+  tone: "gold",
+  updatedAt: null,
+};
+const LIVE_WALL_CARD_TYPES = new Set(["notice", "task", "countdown"]);
+const LIVE_WALL_TONES = new Set(["gold", "rose", "green"]);
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -43,6 +57,43 @@ function mediaConfig() {
     theme: weddingConfig.theme,
     gifMode: weddingConfig.gifMode || "low",
   };
+}
+
+function truncateText(value, maxLength) {
+  return String(value || "").trim().slice(0, maxLength);
+}
+
+function normalizeLiveWallState(input = {}) {
+  const mode = input.mode === "card" ? "card" : "photo";
+  const updatedAt = new Date().toISOString();
+  if (mode === "photo") return { ...DEFAULT_LIVE_WALL_STATE, mode: "photo", updatedAt };
+  const cardType = LIVE_WALL_CARD_TYPES.has(input.cardType) ? input.cardType : "notice";
+  const tone = LIVE_WALL_TONES.has(input.tone) ? input.tone : "gold";
+  return {
+    mode: "card",
+    cardType,
+    title: truncateText(input.title, 48) || "晚宴提示",
+    subtitle: truncateText(input.subtitle, 120),
+    kicker: truncateText(input.kicker, 28),
+    cta: truncateText(input.cta, 42),
+    tone,
+    updatedAt,
+  };
+}
+
+async function ensureAppState(env) {
+  if (!env.DB) throw new Error("Database is not configured.");
+  await env.DB.prepare(
+    "CREATE TABLE IF NOT EXISTS app_state (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL)",
+  ).run();
+}
+
+async function ensureMediaSchema(env) {
+  if (!env.DB) throw new Error("Database is not configured.");
+  await env.DB.prepare(
+    "CREATE TABLE IF NOT EXISTS media (token TEXT PRIMARY KEY, object_key TEXT NOT NULL UNIQUE, filename TEXT NOT NULL, content_type TEXT NOT NULL, size INTEGER NOT NULL, created_at TEXT NOT NULL)",
+  ).run();
+  await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_media_created_at ON media(created_at)").run();
 }
 
 function extensionFor(contentType) {
@@ -220,6 +271,7 @@ export class RemoteCameraSession extends DurableObject {
 
 async function findMedia(env, token) {
   if (!env.DB || !env.MEDIA) return null;
+  await ensureMediaSchema(env);
   return env.DB.prepare("SELECT token, object_key, filename, content_type, size FROM media WHERE token = ?")
     .bind(token)
     .first();
@@ -251,6 +303,7 @@ async function requireAdmin(request, env) {
 async function listMedia(request, env) {
   const denied = await requireAdmin(request, env);
   if (denied) return denied;
+  await ensureMediaSchema(env);
   const results = await env.DB.prepare(
     "SELECT token, filename, content_type, size, created_at FROM media ORDER BY created_at DESC LIMIT 500",
   ).all();
@@ -261,6 +314,7 @@ async function deleteMedia(request, env, token) {
   const denied = await requireAdmin(request, env);
   if (denied) return denied;
   if (!/^[0-9a-f-]{36}$/i.test(token)) return json({ error: "Invalid media token." }, 400);
+  await ensureMediaSchema(env);
   const row = await env.DB.prepare("SELECT object_key FROM media WHERE token = ?").bind(token).first();
   if (!row) return json({ error: "Not found." }, 404);
   await env.MEDIA.delete(row.object_key);
@@ -268,8 +322,39 @@ async function deleteMedia(request, env, token) {
   return json({ ok: true });
 }
 
+async function getLiveWallState(env) {
+  await ensureAppState(env);
+  const row = await env.DB.prepare("SELECT value FROM app_state WHERE key = ?")
+    .bind(LIVE_WALL_STATE_KEY)
+    .first();
+  if (!row?.value) return noStore(json({ state: DEFAULT_LIVE_WALL_STATE }));
+  try {
+    return noStore(json({ state: { ...DEFAULT_LIVE_WALL_STATE, ...JSON.parse(row.value) } }));
+  } catch {
+    return noStore(json({ state: DEFAULT_LIVE_WALL_STATE }));
+  }
+}
+
+async function updateLiveWallState(request, env) {
+  const denied = await requireAdmin(request, env);
+  if (denied) return denied;
+  await ensureAppState(env);
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body." }, 400);
+  }
+  const state = normalizeLiveWallState(body);
+  await env.DB.prepare(
+    "INSERT INTO app_state (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+  ).bind(LIVE_WALL_STATE_KEY, JSON.stringify(state), state.updatedAt).run();
+  return noStore(json({ state }));
+}
+
 async function uploadMedia(request, env) {
   if (!env.DB || !env.MEDIA) return json({ error: "Media storage is not configured yet." }, 503);
+  await ensureMediaSchema(env);
   const contentType = request.headers.get("content-type") || "";
   const extension = extensionFor(contentType);
   const length = Number(request.headers.get("content-length") || 0);
@@ -325,6 +410,8 @@ export default {
     if (request.method === "GET" && pathname === "/api/gallery-config") return noStore(json({ pinRequired: env.GALLERY_PIN_BYPASS !== "true" }));
     if (request.method === "GET" && pathname === "/api/media") return listMedia(request, env);
     if (request.method === "DELETE" && pathname.startsWith("/api/media/")) return deleteMedia(request, env, decodeURIComponent(pathname.slice(11)));
+    if (request.method === "GET" && pathname === "/api/live-wall-state") return getLiveWallState(env);
+    if ((request.method === "PUT" || request.method === "POST") && pathname === "/api/live-wall-state") return updateLiveWallState(request, env);
     if (pathname === "/ws") {
       const pair = url.searchParams.get("pair")?.toUpperCase() || "";
       if (!validPairCode(pair)) return new Response("Invalid pair code.", { status: 400 });

@@ -41,6 +41,10 @@
 
 | ID | Owner | 結果 | 驗證 |
 | --- | --- | --- | --- |
+| WALL-004 | Codex | 改善 `/live-wall` 投影任務卡文字對比：主標、說明與 CTA 改為高對比深色系，避免投影時融入淺色卡片背景；改善 `/live-wall-control` 手機控制頁背景、文字、表單與按鈕對比；新增「自由任務卡」快捷選項，會先套入自訂任務卡草稿，待工作人員填寫後再送出投影。 | `npm.cmd run build` 於 2026-07-15 通過；`git diff --check` 無錯誤；重啟本機 Wrangler 後 `/live-wall` 與 `/live-wall-control` 回 200；`GET /api/live-wall-state` 成功讀回自由任務卡測試狀態。 |
+| WALL-003 | Codex | 新增手機控制的晚宴投影後台 `/live-wall-control`，可切換照片牆、提示卡、任務卡與流程提示；新增 `/api/live-wall-state` 狀態 API，以 D1 `app_state` 保存目前投影模式；`/live-wall` 每 4 秒同步狀態並在同一投影框顯示卡片。另讓本機空 D1 自動建立 `media` 表，避免 `/api/media` 於初次預覽回 500。 | `npm.cmd run build` 於 2026-07-15 通過；`git diff --check` 無錯誤；本機 Wrangler `/live-wall` 與 `/live-wall-control` 回 200；`GET /api/live-wall-state`、`PUT card`、`PUT photo` 均成功；`GET /api/media` 於空本機 D1 回 `{"media":[]}`。 |
+| WALL-002 | Codex | 修正 `/live-wall` 本機預覽：當本機前端伺服器未提供 `/api/gallery-config` 或 `/api/media` JSON，而是回傳 SPA HTML 時，開發環境會自動進入預覽模式，先用既有婚紗／故事照正常輪播；正式環境仍保留現場照片 API 錯誤提示。 | `npm.cmd run build` 於 2026-07-15 通過；`git diff --check` 無錯誤。 |
+| WALL-001 | Codex | 新增 `/live-wall` 投影模式：以現有婚紗／故事照輪播，讀取現有拍貼機媒體清單，每 12 秒檢查新照片，並在至多兩張回憶照後優先插入一張新拍貼機照片。若正式環境啟用管理 PIN，投影端於開場輸入一次即可。 | `npm.cmd run build` 於 2026-07-15 通過；本機 Vite `/live-wall` 回應 200；無可用瀏覽器連線可做截圖檢查。 |
 | WEB-002 | Codex | 移除手機版套用於整個文件的 scroll snap，以及 STORY 的隱藏 snap 定位點；保留原本 sticky 卡片動畫。這可避免離開 STORY 後被瀏覽器吸回最後一個章節而暫停或跳動。 | `npm.cmd run build` 於 2026-07-15 通過；`git diff --check` 無錯誤。 |
 | CLN-001 | Codex | Removed obsolete Node/Vercel-era server, proxy, GIF API path, unused prototype assets, scripts, component, and 54 stale local packages. MP4 encoding now loads only during GIF capture. | `npm run build` passed; deployed Worker `a107a533-8e25-44cd-ab0e-f7064ad35cdf`; `/`, `/v2`, `/photo-booth/gallery`, and `/api/health` returned 200. |
 | DOC-000 | Codex | 建立共享規則、專案脈絡與任務板 | 已檢視現有專案結構；未修改產品程式碼 |
