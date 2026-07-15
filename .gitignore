@@ -5,6 +5,7 @@ uploads/
 .wrangler/
 .env
 圖/
+archive/
 # editor/tool backups & sources
 *~
 *.png~
