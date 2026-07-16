@@ -34,6 +34,13 @@ const DEFAULT_LIVE_WALL_STATE = {
 };
 const LIVE_WALL_CARD_TYPES = new Set(["notice", "task", "countdown"]);
 const LIVE_WALL_TONES = new Set(["gold", "rose", "green"]);
+const LIBRARY_COLLECTIONS = new Set(["site-top", "story", "photo-wall", "lunch-live"]);
+
+function normalizeLibraryCollection(value) {
+  const legacy = { wedding: "photo-wall", dinner: "lunch-live" };
+  const collection = legacy[String(value || "").trim()] || String(value || "").trim();
+  return LIBRARY_COLLECTIONS.has(collection) ? collection : "photo-wall";
+}
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -391,9 +398,24 @@ async function listLibrary(request, env) {
 async function listLiveWallLibrary(env) {
   await ensureMediaSchema(env);
   const results = await env.DB.prepare(
-    "SELECT token, filename, content_type, caption FROM media WHERE kind = 'library' AND live_wall = 1 ORDER BY sort_order ASC, created_at DESC LIMIT 500",
+    "SELECT token, filename, content_type, caption FROM media WHERE kind = 'library' AND collection = 'lunch-live' ORDER BY sort_order ASC, created_at DESC LIMIT 500",
   ).all();
   return noStore(json({
+    media: (results.results || []).map((item) => ({
+      ...item,
+      url: `/photos/${encodeURIComponent(item.token)}`,
+    })),
+  }));
+}
+
+async function listWeddingCollection(env, collection) {
+  if (!LIBRARY_COLLECTIONS.has(collection)) return json({ error: "Unknown photo collection." }, 404);
+  await ensureMediaSchema(env);
+  const results = await env.DB.prepare(
+    "SELECT token, filename, content_type, caption, sort_order FROM media WHERE kind = 'library' AND collection = ? ORDER BY sort_order ASC, created_at ASC LIMIT 500",
+  ).bind(collection).all();
+  return noStore(json({
+    collection,
     media: (results.results || []).map((item) => ({
       ...item,
       url: `/photos/${encodeURIComponent(item.token)}`,
@@ -418,9 +440,9 @@ async function uploadLibraryMedia(request, env) {
   const contentType = (file.type || "").split(";", 1)[0];
   const filename = safeOriginalName(file.name || filenameFor(token, extension));
   const objectKey = `library/${new Date().toISOString().slice(0, 10)}/${token}.${extension}`;
-  const collection = truncateText(form.get("collection") || "wedding", 32) || "wedding";
+  const collection = normalizeLibraryCollection(form.get("collection"));
   const caption = truncateText(form.get("caption") || "", 120);
-  const liveWall = form.get("live_wall") === "true" || form.get("live_wall") === "1" ? 1 : 0;
+  const liveWall = collection === "lunch-live" ? 1 : 0;
   const sortOrder = Number.parseInt(String(form.get("sort_order") || "0"), 10) || 0;
 
   const storedObject = await env.MEDIA.put(objectKey, file.stream(), {
@@ -448,9 +470,9 @@ async function updateLibraryMedia(request, env, token) {
   } catch {
     return json({ error: "Invalid JSON body." }, 400);
   }
-  const collection = truncateText(body.collection || "wedding", 32) || "wedding";
+  const collection = normalizeLibraryCollection(body.collection);
   const caption = truncateText(body.caption || "", 120);
-  const liveWall = body.live_wall === true || body.live_wall === 1 ? 1 : 0;
+  const liveWall = collection === "lunch-live" ? 1 : 0;
   const sortOrder = Number.parseInt(String(body.sort_order || "0"), 10) || 0;
   const result = await env.DB.prepare(
     "UPDATE media SET collection = ?, caption = ?, live_wall = ?, sort_order = ? WHERE token = ? AND kind = 'library'",
@@ -521,6 +543,7 @@ export default {
     if (request.method === "POST" && pathname === "/api/library") return uploadLibraryMedia(request, env);
     if ((request.method === "PATCH" || request.method === "PUT") && pathname.startsWith("/api/library/")) return updateLibraryMedia(request, env, decodeURIComponent(pathname.slice(13)));
     if (request.method === "GET" && pathname === "/api/live-wall-library") return listLiveWallLibrary(env);
+    if (request.method === "GET" && pathname.startsWith("/api/wedding-media/")) return listWeddingCollection(env, decodeURIComponent(pathname.slice(19)));
     if (request.method === "GET" && pathname === "/api/live-wall-state") return getLiveWallState(env);
     if ((request.method === "PUT" || request.method === "POST") && pathname === "/api/live-wall-state") return updateLiveWallState(request, env);
     if (pathname === "/ws") {

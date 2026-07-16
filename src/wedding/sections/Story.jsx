@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const CHAPTERS = [
   {
@@ -7,7 +7,6 @@ const CHAPTERS = [
     body: "迎新宿營的晚上,燈光昏黃、營火搖曳。不自覺在人群裡多看了一眼,就這樣",
     em: "記住了彼此。",
     side: "right",
-    img: "/wedding/images/story-1-camp.jpg",
     cap: "the day we met",
     alt: "大學宿營相遇",
   },
@@ -17,7 +16,6 @@ const CHAPTERS = [
     body: "手忙腳亂地搭帳篷、烤肉、看星星、篝火前談心。從那一夜起,我們決定",
     em: "往後的風景都要一起看。",
     side: "right",
-    img: "/wedding/images/story-2-camping.jpg",
     cap: "our first camp",
     alt: "第一次一起露營",
   },
@@ -27,7 +25,6 @@ const CHAPTERS = [
     body: "背著行囊,橫越了整個歐洲,四十天沒有回頭路。每一段火車、每一座城市,都成了",
     em: "只屬於我們的地圖。",
     side: "left",
-    img: "/wedding/images/story-3-europe.jpg",
     cap: "forty days across europe",
     alt: "四十天歐洲旅行",
   },
@@ -37,7 +34,6 @@ const CHAPTERS = [
     body: "這些年,我們一起去了好多好多地方。陌生的城市因為有彼此陪伴,平凡都變成了",
     em: "不平凡。",
     side: "left",
-    img: "/wedding/images/story-4-travels.jpg",
     cap: "everywhere, together",
     alt: "一起去過的各種地方",
   },
@@ -48,7 +44,6 @@ const CHAPTERS = [
     em: "「我願意」",
     body2: "三個字,眼淚就先掉了下來。",
     side: "right",
-    img: "/wedding/images/story-5-alishan-proposal.jpg",
     cap: "the proposal",
     alt: "宜蘭南山驚喜求婚",
   },
@@ -59,7 +54,6 @@ const CHAPTERS = [
     em: "東倒西歪。",
     body2: "這大概就是最喜歡的,平凡的幸福。",
     side: "left",
-    img: "/wedding/images/story-6-laughing.jpg",
     cap: "just us, laughing",
     alt: "笑嘻嘻的日常",
   },
@@ -70,7 +64,6 @@ const CHAPTERS = [
     em: "誠摯得邀請您的到來",
     body2: ",來見證我們攜手說出「我願意」的這一天。",
     side: "right",
-    img: "/wedding/images/story-7-today.jpg",
     cap: "cheers to us !",
     alt: "婚禮邀請",
   },
@@ -79,7 +72,7 @@ const CHAPTERS = [
 const TILTS = [-3.2, 2.4, -1.8, 3.0, -2.2, 2.8, -1.5];
 const STACK_GAP = 28;
 const ENTER_LEN = 1.0;
-const DWELL_LEN = 0.7;
+const DWELL_LEN = 1.0;
 const RELEASE_DWELL = 0.16;
 
 function buildSegs(n) {
@@ -121,11 +114,28 @@ export default function Story() {
   const cardRefs = useRef([]);
   const txtRefs = useRef([]);
   const dotRefs = useRef([]);
-  const N = CHAPTERS.length;
+  const [photos, setPhotos] = useState([]);
+  const chapters = CHAPTERS.map((chapter, index) => ({ ...chapter, img: photos[index]?.url || "" }));
+  const N = chapters.length;
   const { segs, totalU } = buildSegs(N);
 
   useEffect(() => {
+    let active = true;
+    fetch("/api/wedding-media/story", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : { media: [] }))
+      .then((data) => { if (active) setPhotos(data.media || []); })
+      .catch(() => { if (active) setPhotos([]); });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
     let ticking = false;
+    let settleTimer = 0;
+    let settling = false;
+    const mobileQuery = window.matchMedia("(max-width: 600px)");
+    const settlePoints = segs.filter((segment) => segment.cpS === segment.cpE)
+      .map((segment) => (segment.s + segment.e) / 2);
+
     function update() {
       ticking = false;
       const track = trackRef.current;
@@ -175,10 +185,10 @@ export default function Story() {
         let op = 0,
           dxFactor = 0;
         if (j === activeIdx) {
-          op = clamp((localActive - 0.45) / 0.45, 0, 1);
+          op = clamp((localActive - 0.16) / 0.28, 0, 1);
           dxFactor = 1 - op;
         } else if (j === activeIdx - 1) {
-          op = clamp(1 - (localActive - 0.4) / 0.5, 0, 1);
+          op = clamp(1 - (localActive - 0.14) / 0.28, 0, 1);
         }
         const on = op > 0.02;
         t.classList.toggle("on", on);
@@ -202,13 +212,36 @@ export default function Story() {
         ticking = true;
         requestAnimationFrame(update);
       }
+      if (!mobileQuery.matches || settling) return;
+      window.clearTimeout(settleTimer);
+      settleTimer = window.setTimeout(gentlySettle, 180);
     }
+
+    function gentlySettle() {
+      const track = trackRef.current;
+      if (!track || !mobileQuery.matches || settling) return;
+      const rect = track.getBoundingClientRect();
+      const trackRange = track.offsetHeight - window.innerHeight;
+      if (trackRange <= 0) return;
+      const current = clamp(-rect.top, 0, trackRange);
+      const currentU = (current / trackRange) * (1 - RELEASE_DWELL) * totalU;
+      const nearestU = settlePoints.reduce((nearest, point) => Math.abs(point - currentU) < Math.abs(nearest - currentU) ? point : nearest, settlePoints[0]);
+      const target = (nearestU / totalU) * (1 - RELEASE_DWELL) * trackRange;
+      if (Math.abs(target - current) > window.innerHeight * 0.13) return;
+      settling = true;
+      window.scrollTo({ top: window.scrollY + rect.top + target, behavior: "smooth" });
+      window.setTimeout(() => { settling = false; }, 420);
+    }
+
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scrollend", gentlySettle);
     window.addEventListener("resize", onScroll);
     update();
     return () => {
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scrollend", gentlySettle);
       window.removeEventListener("resize", onScroll);
+      window.clearTimeout(settleTimer);
     };
   }, []);
 
@@ -222,7 +255,7 @@ export default function Story() {
         <div className="w-story-sticky">
           <h2 className="w-story-bigtitle">our story</h2>
 
-          {CHAPTERS.map((c, i) => (
+          {chapters.map((c, i) => (
             <div
               key={i}
               className={`w-txt ${c.side}`}
@@ -243,7 +276,7 @@ export default function Story() {
           ))}
 
           <div className="w-stack">
-            {CHAPTERS.map((c, i) => (
+            {chapters.map((c, i) => (
               <div
                 key={i}
                 className="w-card"
@@ -253,7 +286,7 @@ export default function Story() {
                 }}
               >
                 <div className="photo">
-                  <img alt={c.alt} src={c.img} />
+                  {c.img ? <img alt={c.alt} src={c.img} /> : <span aria-label="故事照片尚未上傳">STORY PHOTO</span>}
                 </div>
                 <div className="cap">{c.cap}</div>
               </div>
@@ -261,7 +294,7 @@ export default function Story() {
           </div>
 
           <div className="w-dots">
-            {CHAPTERS.map((_, i) => (
+            {chapters.map((_, i) => (
               <b
                 key={i}
                 ref={(el) => {

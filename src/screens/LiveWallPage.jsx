@@ -1,33 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import './live-wall.css';
 
-const FALLBACK_STOCK_PHOTOS = [
-  '/wedding/images/gallery-1-registration.jpg',
-  '/wedding/images/gallery-2-certificate.jpg',
-  '/wedding/images/gallery-3-bouquet.jpg',
-  '/wedding/images/gallery-4-carry.jpg',
-  '/wedding/images/gallery-5-veil.jpg',
-  '/wedding/images/gallery-6-mirror.jpg',
-  '/wedding/images/gallery-9-sunglasses.jpg',
-  '/wedding/images/gallery-7-bear.jpg',
-  '/wedding/images/gallery-8-dino.jpg',
-  '/wedding/images/gallery-10-dino2.jpg',
-  '/wedding/images/gallery-11-dessert.jpg',
-  '/wedding/images/story-1-camp.jpg',
-  '/wedding/images/story-2-camping.jpg',
-  '/wedding/images/story-3-europe.jpg',
-  '/wedding/images/story-4-travels.jpg',
-  '/wedding/images/story-5-alishan-proposal.jpg',
-  '/wedding/images/story-6-laughing.jpg',
-  '/wedding/images/story-7-today.jpg',
-];
-
 const DISPLAY_MS = 10_000;
 const POLL_MS = 12_000;
 const STATE_POLL_MS = 4_000;
 const DEFAULT_WALL_STATE = { mode: 'photo' };
 
-const fallbackStock = FALLBACK_STOCK_PHOTOS.map((src) => ({ src }));
+const emptyStock = [{ src: '', mediaType: '' }];
 
 export default function LiveWallPage() {
   const [pin, setPin] = useState(() => sessionStorage.getItem('live_wall_pin') || '');
@@ -36,8 +15,8 @@ export default function LiveWallPage() {
   const [access, setAccess] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [message, setMessage] = useState('');
-  const [stockPhotos, setStockPhotos] = useState(fallbackStock);
-  const [slide, setSlide] = useState({ kind: 'memory', src: fallbackStock[0].src, key: 0 });
+  const [stockPhotos, setStockPhotos] = useState(emptyStock);
+  const [slide, setSlide] = useState({ kind: 'memory', src: '', key: 0 });
   const [wallState, setWallState] = useState(DEFAULT_WALL_STATE);
   const scheduleRef = useRef({ stockIndex: 1, stockSinceBooth: 0, boothQueue: [], knownTokens: new Set() });
   const pinRef = useRef(pin);
@@ -50,7 +29,7 @@ export default function LiveWallPage() {
     if (!isLocalPreview) return false;
     setPreviewMode(true);
     setAccess(true);
-    setMessage('預覽模式：目前先播放現有婚紗與故事照；連上 Cloudflare Worker 後，現場拍貼機照片會自動加入。');
+    setMessage('預覽模式：請連上 Cloudflare Worker，從午宴直播照片庫讀取輪播照片。');
     return true;
   }, []);
 
@@ -69,7 +48,7 @@ export default function LiveWallPage() {
         ? { kind: 'memory', src: library[0].src, mediaType: library[0].mediaType, key: current.key + 1 }
         : current);
     } catch {
-      setStockPhotos((current) => (current.length ? current : fallbackStock));
+      setStockPhotos((current) => (current.length ? current : emptyStock));
     }
   }, []);
 
@@ -184,7 +163,7 @@ export default function LiveWallPage() {
         return;
       }
 
-      const stock = stockPhotos.length ? stockPhotos : fallbackStock;
+      const stock = stockPhotos.length ? stockPhotos : emptyStock;
       const item = stock[schedule.stockIndex % stock.length];
       schedule.stockIndex += 1;
       schedule.stockSinceBooth += 1;
@@ -233,7 +212,7 @@ export default function LiveWallPage() {
         ) : (
           <>
             <div className="live-wall-photo">
-              {isVideo
+              {!slide.src ? <div className="live-wall-empty">午宴直播照片庫尚未加入照片</div> : isVideo
                 ? <video src={slide.src} autoPlay muted loop playsInline />
                 : <img src={slide.src} alt={slide.kind === 'fresh' ? '現場拍貼機新照片' : 'Jim 與 Camilla 的回憶'} />}
             </div>
