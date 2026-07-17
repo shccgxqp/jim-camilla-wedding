@@ -9,12 +9,42 @@ const GIFT = (
 const GUEST_COPY =
   '今日所邀，皆是我們人生裡最想並肩同行的人。感謝你們願意撥出這個中午，陪我們把日子過成故事。您的到來，就是這場婚禮最好的禮物。';
 
-// Venue details remain draft content until the couple confirms the final information.
 const ROWS = [
   { en: 'Wedding Time', zh: '婚禮時間', value: '2026 年 11 月 7 日・中午 12:00' },
-  { en: 'Wedding Address', zh: '婚禮地點', value: '婚宴場地資訊將於邀請函確認後公布' },
+  {
+    en: 'Wedding Address',
+    zh: '婚禮地點',
+    value: (
+      <>
+        <span className="wv2-venue-name">翡麗詩莊園</span>
+        <span className="wv2-venue-address">台北市松山區敦化北路 232 號</span>
+        <a
+          className="wv2-map-link"
+          href="https://www.google.com/maps/place/%E7%BF%A1%E9%BA%97%E8%A9%A9%E8%8E%8A%E5%9C%92+/+Chateau+de+Felicite/@25.0595259,121.5486954,17.5z/data=!4m5!3m4!1s0x0:0xc1084ecde0b886db!8m2!3d25.0593069!4d121.549087"
+          target="_blank"
+          rel="noreferrer"
+        >
+          開啟地圖 ↗
+        </a>
+      </>
+    ),
+  },
   { en: 'Wedding Dresscode', zh: '婚禮穿著', value: '敬請以舒適、適合中午婚宴的服裝為主' },
-  { en: 'Transportation', zh: '交通資訊', value: '交通與停車資訊將於邀請函確認後公布' },
+  {
+    en: 'Transportation',
+    zh: '交通資訊',
+    value: (
+      <details className="wv2-transport-details">
+        <summary>松山機場站 3 號出口步行約 7 分鐘；提供代客泊車與周邊停車場</summary>
+        <div className="wv2-transport-content">
+          <p><strong>代客泊車</strong>200 元／次，停滿為限。</p>
+          <p><strong>停車</strong>Times 24h（步行 2 分鐘／130 公尺）；民有市場地下停車場（步行 5 分鐘／400 公尺）。</p>
+          <p><strong>捷運</strong>松山機場站 3 號出口（7 分鐘）；中山國中站（8 分鐘）；南京復興站 7 號出口（12 分鐘）。</p>
+          <p><strong>公車</strong>民生敦化路口步行 2 分鐘；長庚醫院步行 5 分鐘；民權敦化路口步行 6 分鐘。</p>
+        </div>
+      </details>
+    ),
+  },
 ];
 
 export default function VenueInfoV2() {
