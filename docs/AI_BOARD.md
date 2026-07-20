@@ -59,6 +59,8 @@
 
 | ID | Owner | 結果 | 驗證 |
 | --- | --- | --- | --- |
+| WEB-004 | Codex | 已將目前 V2 的封面、承諾段落與倒數文案更新提交至 GitHub 並發布到 Cloudflare 正式 Worker。 | `npm.cmd run build`、`git diff --check` 通過；Cloudflare Worker version `eb855ab4-e1c2-48fa-89a4-123904ef95cc` 已部署。 |
+| WEB-003 | Codex | V2 封面姓名改為「Jim & Camilla」並增加字距、日期列移除 Le Ciel；A Promise For Life 拉開字距與行距，並換入指定的四段故事文案及換行。 | `npm.cmd run build` 於 2026-07-20 通過；`git diff --check` 無錯誤。 |
 | VENUE-002 | Codex | 已將 V2 翡麗詩莊園地點、Google 地圖連結與可展開交通資訊發布至 Cloudflare 正式 Worker。 | `npm.cmd run cf:deploy` 於 2026-07-17 通過；Worker version `bbe52c25-1fbf-4e7d-9cf8-165786d0ce04`。 |
 | VENUE-001 | Codex | V2 地點資訊改為翡麗詩莊園、敦化北路地址與可直接開啟的 Google 地圖；交通列以捷運與停車摘要呈現，點擊後展開代客泊車、周邊停車場、捷運與公車站點。 | `npm.cmd run build` 於 2026-07-17 通過；`git diff --check` 無錯誤。 |
 | NAV-001 | Codex | 在 `/` 與 `/v2` 頁面最底部新增臨時「展示與管理快捷入口」，包含正式首頁、新版頁面、拍貼機、遠端相機、照片管理、投影幕、投影控制、照片庫，方便展示與測試期間快速跳轉。 | `npm.cmd run build` 於 2026-07-15 通過；`git diff --check` 無錯誤。 |

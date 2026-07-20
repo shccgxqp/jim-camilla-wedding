@@ -9,8 +9,12 @@ const RIBBON = (
   </svg>
 );
 
-const STORY_COPY =
-  '相戀快12年了，是彼此的初戀，對最純的那種，中間沒有吵架鬧分手過，因為認識他我才知道原來被一個人呵護後，是可以這麼安心與踏實的存在。在他的世界裡，我一直被溫柔對待，也被認真珍惜，我們不需要什麼昂貴的禮物，打卡式的約會，而是很小但重要，每天晚上的抱抱晚安，手牽手的約會，不嫌辛苦的幫我準備午餐便當，下雨天一手撐傘另一隻手護著我的肩，這份被穩穩接住的幸福，讓我更確定未來想一直走下去的人是他。';
+const STORY_COPY = [
+  '人生中的第一段感情 也是最後一段',
+  '愛情從來不是轟轟烈烈，而是在平凡的日子裡\n依然願意陪伴彼此 理解彼此\n12年一路走來，有快樂回憶，也有差點忍不住想開扁對方的心情(?',
+  '但我們總能放下脾氣 逗笑另一方\n今年是很精彩的一年\n我們一起探索未知的世界，偶而重複無聊的日常\n卻因為身邊是彼此，連最普通的事都變得特別',
+  '讓我們在手牽手一起走過下一個12年',
+];
 
 export default function PromiseV2() {
   const photos = useWeddingMedia('site-top');
@@ -22,7 +26,9 @@ export default function PromiseV2() {
       <div className="wv2-promise-copy">
         {RIBBON}
         <h2>A Promise<br />For Life</h2>
-        <p>{STORY_COPY}</p>
+        <div className="wv2-promise-story">
+          {STORY_COPY.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+        </div>
       </div>
     </section>
   );

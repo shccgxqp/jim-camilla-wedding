@@ -24,14 +24,14 @@ export default function CountdownV2() {
 
   return (
     <section className="wv2-countdown">
-      <div className="wv2-countdown-kicker">[ 倒數計時 · Time Until We Begin ]</div>
+      <div className="wv2-countdown-kicker">[ 倒數計時 · WE  LOOK FORWARD TO SEEING YOU ]</div>
       <div className="wv2-countdown-row">
         <div className="wv2-countdown-unit"><span className="num" ref={dRef}>000</span><span className="lbl">Days</span></div>
         <div className="wv2-countdown-unit"><span className="num" ref={hRef}>00</span><span className="lbl">Hours</span></div>
         <div className="wv2-countdown-unit"><span className="num" ref={mRef}>00</span><span className="lbl">Min</span></div>
         <div className="wv2-countdown-unit"><span className="num" ref={sRef}>00</span><span className="lbl">Sec</span></div>
       </div>
-      <p className="wv2-countdown-quip">期待在宴會上與各位的相遇</p>
+      <p className="wv2-countdown-quip">這一年，這一天，希望您與我們相聚如初</p>
     </section>
   );
 }
