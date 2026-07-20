@@ -116,10 +116,19 @@
 }
 .wv2-info-row dt .en{text-transform:uppercase}
 .wv2-info-row dd{font-family:var(--serif);font-size:18px;line-height:1.6}
-.wv2-venue-name,.wv2-venue-address{display:block}
+.wv2-venue-name,.wv2-venue-hall,.wv2-venue-address{display:block}
+.wv2-venue-hall{font-family:var(--v2-chinese);font-size:16px;color:var(--v2-on-red);margin-top:2px}
 .wv2-venue-address{font-family:var(--v2-chinese);font-size:15px;color:var(--v2-on-red-soft);margin-top:2px}
 .wv2-map-link{display:inline-block;margin-top:8px;color:var(--v2-on-red);font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-decoration:none;border-bottom:1px solid var(--v2-on-red-soft)}
 .wv2-map-link:hover{color:#fff;border-color:#fff}
+.wv2-dress-code p{font-family:var(--v2-chinese);font-size:16px;color:var(--v2-on-red);line-height:1.6}
+.wv2-dress-swatches{display:flex;gap:13px;align-items:center;margin-top:15px}
+.wv2-dress-swatch{display:block;width:24px;height:24px;border-radius:50%;border:1px solid rgba(246,234,217,.35);box-shadow:0 2px 5px rgba(41,19,16,.22)}
+.wv2-dress-swatch.is-white{background:#f4f1e9}
+.wv2-dress-swatch.is-blue-light{background:#bdccd0}
+.wv2-dress-swatch.is-blue{background:#91aab4}
+.wv2-dress-swatch.is-gray-light{background:#b7b9b5}
+.wv2-dress-swatch.is-gray{background:#687178}
 .wv2-transport-details summary{cursor:pointer;list-style:none;padding-right:20px;position:relative}
 .wv2-transport-details summary::-webkit-details-marker{display:none}
 .wv2-transport-details summary::after{content:'+';position:absolute;right:0;font-family:var(--mono);color:var(--v2-on-red-soft)}

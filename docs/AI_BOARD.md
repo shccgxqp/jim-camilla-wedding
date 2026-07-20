@@ -59,6 +59,7 @@
 
 | ID | Owner | 結果 | 驗證 |
 | --- | --- | --- | --- |
+| WEB-005 | Codex | V2 婚禮資訊已補上 2F 天翼廳（Le Ciel）；婚禮穿著改為著裝建議，加入白、藍、灰低飽和色票；交通摘要更新為文湖線松山機場站與可展開的停車詳情。 | `npm.cmd run build` 於 2026-07-20 通過；`git diff --check` 無錯誤。 |
 | WEB-004 | Codex | 已將目前 V2 的封面、承諾段落與倒數文案更新提交至 GitHub 並發布到 Cloudflare 正式 Worker。 | `npm.cmd run build`、`git diff --check` 通過；Cloudflare Worker version `eb855ab4-e1c2-48fa-89a4-123904ef95cc` 已部署。 |
 | WEB-003 | Codex | V2 封面姓名改為「Jim & Camilla」並增加字距、日期列移除 Le Ciel；A Promise For Life 拉開字距與行距，並換入指定的四段故事文案及換行。 | `npm.cmd run build` 於 2026-07-20 通過；`git diff --check` 無錯誤。 |
 | VENUE-002 | Codex | 已將 V2 翡麗詩莊園地點、Google 地圖連結與可展開交通資訊發布至 Cloudflare 正式 Worker。 | `npm.cmd run cf:deploy` 於 2026-07-17 通過；Worker version `bbe52c25-1fbf-4e7d-9cf8-165786d0ce04`。 |

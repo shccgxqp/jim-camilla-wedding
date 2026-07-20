@@ -17,6 +17,7 @@ const ROWS = [
     value: (
       <>
         <span className="wv2-venue-name">翡麗詩莊園</span>
+        <span className="wv2-venue-hall">2F 天翼廳（Le Ciel）</span>
         <span className="wv2-venue-address">台北市松山區敦化北路 232 號</span>
         <a
           className="wv2-map-link"
@@ -29,13 +30,28 @@ const ROWS = [
       </>
     ),
   },
-  { en: 'Wedding Dresscode', zh: '婚禮穿著', value: '敬請以舒適、適合中午婚宴的服裝為主' },
+  {
+    en: 'Dress Code',
+    zh: '著裝建議',
+    value: (
+      <div className="wv2-dress-code">
+        <p>低飽和上衣／裙子　色系參考</p>
+        <div className="wv2-dress-swatches" aria-label="白、藍、灰色系參考">
+          <span className="wv2-dress-swatch is-white" title="暖白色" />
+          <span className="wv2-dress-swatch is-blue-light" title="霧藍色" />
+          <span className="wv2-dress-swatch is-blue" title="灰藍色" />
+          <span className="wv2-dress-swatch is-gray-light" title="淺灰色" />
+          <span className="wv2-dress-swatch is-gray" title="深灰色" />
+        </div>
+      </div>
+    ),
+  },
   {
     en: 'Transportation',
     zh: '交通資訊',
     value: (
       <details className="wv2-transport-details">
-        <summary>松山機場站 3 號出口步行約 7 分鐘；提供代客泊車與周邊停車場</summary>
+        <summary>捷運文湖線 松山機場站 3 號出口步行約 7 分鐘；提供代客泊車與周邊停車場（詳情請點開看更多）</summary>
         <div className="wv2-transport-content">
           <p><strong>代客泊車</strong>200 元／次，停滿為限。</p>
           <p><strong>停車</strong>Times 24h（步行 2 分鐘／130 公尺）；民有市場地下停車場（步行 5 分鐘／400 公尺）。</p>

@@ -1,7 +1,7 @@
 const EVENTS = [
   { time: '11:30 AM', label: '迎賓簽到' },
   { time: '12:00 PM', label: '開席' },
-  { time: '1:30PM', label: '敬酒' },
+  { time: '13:50 PM', label: '敬酒' },
   { time: '14:30 PM', label: '送客' },
 ];
 
