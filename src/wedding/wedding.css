@@ -96,9 +96,10 @@
   max-width:1000px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;
 }
 .wv2-info-guest{text-align:center}
-.wv2-info-guest p{font-family:var(--v2-chinese);font-size:clamp(16px,1.55vw,20px);line-height:2.05;color:var(--v2-on-red);max-width:34em;margin:0 auto;text-align:center}
-.wv2-info-gift{width:56px;height:56px;margin:36px auto 14px;color:var(--v2-on-red-soft)}
-.wv2-info-guest .tag{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--v2-on-red-soft)}
+.wv2-info-guest p{font-family:var(--v2-chinese);font-size:clamp(16px,1.55vw,20px);line-height:2.05;color:var(--v2-on-red);max-width:none;margin:0 auto;text-align:center}
+.wv2-guest-line{display:block;white-space:nowrap}
+.wv2-info-gift{display:block;width:min(230px,62%);height:auto;margin:26px auto 0}
+.wv2-info-guest .tag{display:none}
 
 /* V2 reuses the existing Gallery component. Keep its photo wall centred rather
    than stretching the 12-column mosaic to the full viewport. */

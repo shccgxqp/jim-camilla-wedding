@@ -11,6 +11,8 @@
 
 
 
+
+
 | STORY-005 | Reduce double-layer polaroid frame thickness while retaining a visible Story border | Codex | master | `src/wedding/wedding.css`, deployment | 2026-07-16 | DONE — build and diff check passed; deployed Worker `b0f55920-f425-4e9a-aa36-06bfe31f34ef`. Reduced total side/top white frame from 48px to 22px and reduced bottom frame spacing. |
 
 | STORY-004 | Make Story polaroid borders unmistakable, prevent desktop captions clipping, and lift mobile title | Codex | master | `src/wedding/wedding.css`, deployment | 2026-07-16 | DONE — build and diff check passed; deployed Worker `a6d0105d-6db2-4461-bf29-a5dbfab6fffb`. Added explicit 24px/58px white overlay frame, lifted desktop stack to 47%, and moved mobile title to the top safe area. |
@@ -61,6 +63,10 @@
 | DOC-001 | 維護共用協作文件 | Codex | `AGENTS.md`, `docs/**` | 規則與任務板保持同步、清楚且可執行 |
 
 ## DONE
+
+| VENUE-004 | Codex | Rendered each guest sentence as a separate non-wrapping line and removed all Photo Wall header elements, leaving only the image grid. | `npm.cmd run cf:deploy` passed; deployed Worker `ead41128-61d2-4ab0-9805-346fc365aa74`; browser verified no gallery header, title, quote, or flower divider, and all three guest lines use `nowrap`. |
+
+| VENUE-003 | Codex | Restored visible VenueInfo paragraph breaks, replaced the gift prompt with supplied `S__60874756.png` swan artwork, and retained only white, blue, and grey dress swatches. | `npm.cmd run cf:deploy` passed; deployed Worker `b5b1ce03-cadb-43b0-be13-bee17ccb8f8f`; browser verified `pre-line` text, three swatches, and loaded 1498×749 image. |
 
 | REL-001 | Codex | Published the verified Story reveal restoration, Photo Wall flower alignment, expandable website tools, and VenueInfo three-line guest copy. | `npm.cmd run cf:deploy` passed; deployed Worker `2d51bc1e-e1f9-458f-bf4a-f43ba008e82f` on 2026-07-21. |
 
