@@ -7,6 +7,10 @@
 ## IN PROGRESS
 
 
+
+
+
+
 | STORY-005 | Reduce double-layer polaroid frame thickness while retaining a visible Story border | Codex | master | `src/wedding/wedding.css`, deployment | 2026-07-16 | DONE — build and diff check passed; deployed Worker `b0f55920-f425-4e9a-aa36-06bfe31f34ef`. Reduced total side/top white frame from 48px to 22px and reduced bottom frame spacing. |
 
 | STORY-004 | Make Story polaroid borders unmistakable, prevent desktop captions clipping, and lift mobile title | Codex | master | `src/wedding/wedding.css`, deployment | 2026-07-16 | DONE — build and diff check passed; deployed Worker `a6d0105d-6db2-4461-bf29-a5dbfab6fffb`. Added explicit 24px/58px white overlay frame, lifted desktop stack to 47%, and moved mobile title to the top safe area. |
@@ -57,6 +61,14 @@
 | DOC-001 | 維護共用協作文件 | Codex | `AGENTS.md`, `docs/**` | 規則與任務板保持同步、清楚且可執行 |
 
 ## DONE
+
+| REL-001 | Codex | Published the verified Story reveal restoration, Photo Wall flower alignment, expandable website tools, and VenueInfo three-line guest copy. | `npm.cmd run cf:deploy` passed; deployed Worker `2d51bc1e-e1f9-458f-bf4a-f43ba008e82f` on 2026-07-21. |
+
+| STORY-007 | Codex | Restored Story sticky scroll reveals by removing root and wedding wrapper horizontal-overflow rules that prevented `position: sticky` from binding to the viewport. | `npm.cmd run cf:deploy` passed; deployed Worker `383307be-490e-4591-9806-113ad7841411`; browser verified Story sticky top at 0px, a visible card and chapter text, and no horizontal overflow. |
+
+| WEB-012 | Codex | Fixed the V2 CSS reset that was overriding divider auto-margins, restoring the Photo Wall flower to the exact centre; replaced closing shortcut cards with a collapsed, expandable website-tools control. | `npm.cmd run cf:deploy` passed; deployed Worker `77554e54-456a-42e5-a5e3-8a231ad92a4d`; browser verification confirmed divider and container centres both at 760.4px, and the control expands to seven links. |
+
+| WEB-011 | Codex | Centred the Photo Wall floral divider in an explicit middle grid column, with equal-width decorative rules on both sides. | `npm.cmd run cf:deploy` passed; deployed Worker `f3c6b900-388b-4fb9-8423-f9c07ef87f11` on 2026-07-21. |
 
 | CLEAN-002 | Codex | Consolidated the only wedding implementation and its public assets under canonical `src/wedding/` and `public/wedding/` directories, removing V2-only file names. | `npm.cmd run cf:deploy` passed; deployed Worker `a5caa49c-88aa-43cf-8035-8cbdc74d97ee` on 2026-07-21. |
 

@@ -51,9 +51,9 @@
 .w-section-head h2{font-family:var(--display);font-style:italic;font-weight:500;font-size:clamp(48px,9vw,108px);color:var(--ink);line-height:.95;letter-spacing:-.02em}
 .w-section-head .w-gallery-quote{font-family:var(--display);font-size:clamp(34px,7vw,84px);font-style:italic;font-weight:500;line-height:.9;letter-spacing:-.04em;color:#8e3b3b;margin-top:22px}
 .w-section-head .w-gallery-quote .is-blue{color:#2f4053}
-.w-rule-line{display:flex;align-items:center;gap:14px;color:var(--champagne-dark);max-width:280px;margin:28px auto 0}
-.w-rule-line::before,.w-rule-line::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--champagne-dark) 30%,var(--champagne-dark) 70%,transparent)}
-.w-rule-line .orn{font-family:var(--serif);font-style:italic;font-size:18px;color:var(--champagne-dark)}
+.wedding-v2 .w-rule-line{display:grid;grid-template-columns:1fr 28px 1fr;align-items:center;width:min(280px,calc(100% - 36px));color:var(--champagne-dark);margin:28px auto 0}
+.w-rule-line::before,.w-rule-line::after{content:"";height:1px;background:linear-gradient(90deg,transparent,var(--champagne-dark) 30%,var(--champagne-dark) 70%,transparent)}
+.w-rule-line .orn{width:28px;text-align:center;font-family:var(--serif);font-style:italic;font-size:18px;color:var(--champagne-dark)}
 .w-bot-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px;margin-top:24px}
 .w-bot-grid .item{position:relative;overflow:hidden;background:var(--bg-3);cursor:pointer;border-radius:18px;transition:transform .5s,box-shadow .5s;box-shadow:0 8px 22px rgba(74,80,60,.1)}
 .w-bot-grid .item:hover{transform:translateY(-6px);box-shadow:0 22px 50px rgba(74,80,60,.2)}

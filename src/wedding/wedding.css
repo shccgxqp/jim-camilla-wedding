@@ -16,7 +16,6 @@
   background:var(--v2-cream);
   color:var(--v2-ink);
   font-family:var(--body);
-  overflow-x:clip;
 }
 .wedding-v2 *{box-sizing:border-box;margin:0;padding:0}
 .wedding-v2 img{display:block;max-width:100%}

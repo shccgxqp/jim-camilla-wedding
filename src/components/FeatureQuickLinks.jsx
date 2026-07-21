@@ -1,27 +1,29 @@
 import './feature-quick-links.css';
 
 const LINKS = [
-  { label: '正式首頁', href: '/', hint: '主婚禮網站' },
-  { label: '拍貼機', href: '/photo-booth', hint: '賓客拍照入口' },
-  { label: '遠端相機', href: '/photo-booth/camera', hint: '手機鏡頭連線' },
-  { label: '照片管理', href: '/photo-booth/gallery', hint: '拍貼成品管理' },
-  { label: '投影幕', href: '/live-wall', hint: '晚宴記憶牆' },
-  { label: '投影控制', href: '/live-wall-control', hint: '現場工作人員' },
-  { label: '照片庫', href: '/photo-library', hint: 'R2 照片上傳' },
+  { label: '婚禮網站', href: '/', hint: '回到首頁' },
+  { label: '拍照亭', href: '/photo-booth', hint: '開始拍照' },
+  { label: '遠端相機', href: '/photo-booth/camera', hint: '手機遙控拍照' },
+  { label: '照片相簿', href: '/photo-booth/gallery', hint: '查看照片' },
+  { label: '直播牆', href: '/live-wall', hint: '即時照片牆' },
+  { label: '直播牆控制', href: '/live-wall-control', hint: '工作人員使用' },
+  { label: '照片管理', href: '/photo-library', hint: '管理婚禮照片' },
 ];
 
 export default function FeatureQuickLinks({ tone = 'light' }) {
   return (
-    <nav className={`feature-links ${tone}`} aria-label="網站功能快捷入口">
-      <p>展示與管理快捷入口</p>
-      <div>
-        {LINKS.map((link) => (
-          <a href={link.href} key={link.href}>
-            <span>{link.label}</span>
-            <small>{link.hint}</small>
-          </a>
-        ))}
-      </div>
-    </nav>
+    <details className={`feature-links ${tone}`}>
+      <summary>網站工具</summary>
+      <nav aria-label="網站功能快捷入口">
+        <div>
+          {LINKS.map((link) => (
+            <a href={link.href} key={link.href}>
+              <span>{link.label}</span>
+              <small>{link.hint}</small>
+            </a>
+          ))}
+        </div>
+      </nav>
+    </details>
   );
 }
