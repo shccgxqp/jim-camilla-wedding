@@ -30,7 +30,7 @@ const ROWS = [
     zh: '著裝建議',
     value: (
       <div className="wv2-dress-code">
-        <p>低飽和上衣／裙子　色系參考</p>
+        <p>低飽和上衣／裙子　色系: 白藍灰</p>
         <div className="wv2-dress-swatches" aria-label="白、藍、灰色系參考">
           <span className="wv2-dress-swatch is-white" title="暖白色" />
           <span className="wv2-dress-swatch is-blue" title="灰藍色" />

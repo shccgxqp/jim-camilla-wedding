@@ -33,6 +33,9 @@ export default function Gallery({ onLightbox }) {
   return (
     <section id="gallery" className="w-gallery" ref={sectionRef}>
       <div className="w-container">
+        <div className="w-section-head w-fade">
+          <p className="w-gallery-quote">finding <span className="is-blue">you</span> was like<br />coming <span className="is-blue">home.</span></p>
+        </div>
         <div className="w-bot-grid" data-count={items.length}>
           {items.map((item) => (
             <div

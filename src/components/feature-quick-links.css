@@ -1,5 +1,6 @@
 .feature-links{width:max-content;max-width:100%;margin:34px auto 0;color:rgba(255,250,243,.56);font:11px/1.4 var(--mono);letter-spacing:.12em;text-align:center}
-.feature-links summary{display:inline-flex;align-items:center;gap:7px;cursor:pointer;list-style:none;opacity:.72;transition:opacity .2s ease}
+.feature-links summary{display:inline-flex;align-items:center;cursor:pointer;list-style:none;font-size:9px;letter-spacing:.18em;opacity:.4;transition:opacity .2s ease}
+.feature-links summary::after,.feature-links[open] summary::after{content:none}
 .feature-links summary:hover,.feature-links summary:focus-visible{opacity:1}
 .feature-links summary::-webkit-details-marker{display:none}
 .feature-links summary::after{content:'+';font-size:14px;line-height:1;letter-spacing:0}
@@ -14,3 +15,4 @@
 .feature-links:not(.dark) a{color:#321916;border-color:rgba(50,25,22,.18)}
 .feature-links:not(.dark) small{color:#6b4a42}
 @media (max-width:560px){.feature-links{margin-top:28px}.feature-links nav{width:min(280px,calc(100vw - 36px))}.feature-links nav div{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.feature-links summary::after,.feature-links[open] summary::after{content:none}

@@ -13,6 +13,10 @@
 
 
 
+
+
+
+
 | STORY-005 | Reduce double-layer polaroid frame thickness while retaining a visible Story border | Codex | master | `src/wedding/wedding.css`, deployment | 2026-07-16 | DONE — build and diff check passed; deployed Worker `b0f55920-f425-4e9a-aa36-06bfe31f34ef`. Reduced total side/top white frame from 48px to 22px and reduced bottom frame spacing. |
 
 | STORY-004 | Make Story polaroid borders unmistakable, prevent desktop captions clipping, and lift mobile title | Codex | master | `src/wedding/wedding.css`, deployment | 2026-07-16 | DONE — build and diff check passed; deployed Worker `a6d0105d-6db2-4461-bf29-a5dbfab6fffb`. Added explicit 24px/58px white overlay frame, lifted desktop stack to 47%, and moved mobile title to the top safe area. |
@@ -63,6 +67,14 @@
 | DOC-001 | 維護共用協作文件 | Codex | `AGENTS.md`, `docs/**` | 規則與任務板保持同步、清楚且可執行 |
 
 ## DONE
+
+| CLOSING-001 | Codex | Reframed the closing couple photograph in a wider 16:9 landscape frame with centred, upper-biased crop so both people remain visible. | `npm.cmd run cf:deploy` passed; deployed Worker `b6aa5287-6e34-4548-b83f-8ebda1030d64`; browser screenshot verified both people and their joined hands are visible. |
+
+| FOOTER-001 | Codex | Replaced the visible website-tools trigger with a subtle `jim & camilla by 2026` credit while preserving its expandable links and removing the plus sign. | `npm.cmd run cf:deploy` passed; deployed Worker `8f694e4e-a423-4fc3-98d8-c1af402dbf9b`; browser verified 9px, 40% opacity text and no pseudo-element marker. |
+
+| GALLERY-002 | Codex | Added responsive lower whitespace below the Photo Wall quote to balance it in its header area before the image grid. | `npm.cmd run cf:deploy` passed; deployed Worker `d87f622f-23a5-437c-9bf3-96342f4049cc`; browser verified 80px desktop header margin and a 60px rendered gap. |
+
+| GALLERY-001 | Codex | Restored the two-line Photo Wall quote from Git history while leaving its title and floral divider removed, and changed the grey dress swatch to light grey. | `npm.cmd run cf:deploy` passed; deployed Worker `aedf91b1-d7aa-4ce9-8ec3-e0c3152355f1`; browser verified quote presence, no title or flower, and grey `rgb(183, 185, 181)`. |
 
 | VENUE-004 | Codex | Rendered each guest sentence as a separate non-wrapping line and removed all Photo Wall header elements, leaving only the image grid. | `npm.cmd run cf:deploy` passed; deployed Worker `ead41128-61d2-4ab0-9805-346fc365aa74`; browser verified no gallery header, title, quote, or flower divider, and all three guest lines use `nowrap`. |
 

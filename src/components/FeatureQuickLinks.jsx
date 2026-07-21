@@ -13,7 +13,7 @@ const LINKS = [
 export default function FeatureQuickLinks({ tone = 'light' }) {
   return (
     <details className={`feature-links ${tone}`}>
-      <summary>網站工具</summary>
+      <summary>jim &amp; camilla by 2026</summary>
       <nav aria-label="網站功能快捷入口">
         <div>
           {LINKS.map((link) => (
