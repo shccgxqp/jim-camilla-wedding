@@ -1,37 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import './shared.css';
 import './wedding.css';
-import WeddingNav from './WeddingNav.jsx';
-import Hero from './sections/Hero.jsx';
-import Countdown from './sections/Countdown.jsx';
 import Story from './sections/Story.jsx';
 import Gallery from './sections/Gallery.jsx';
-import Venue from './sections/Venue.jsx';
-import Faq from './sections/Faq.jsx';
-import Footer from './sections/Footer.jsx';
-import RsvpModal from './modals/RsvpModal.jsx';
-import Lightbox from './modals/Lightbox.jsx';
+import Lightbox from './components/Lightbox.jsx';
+import Cover from './sections/Cover.jsx';
+import Promise from './sections/Promise.jsx';
+import Countdown from './sections/Countdown.jsx';
+import VenueInfo from './sections/VenueInfo.jsx';
+import Timeline from './sections/Timeline.jsx';
+import Closing from './sections/Closing.jsx';
 
 export default function WeddingSite() {
-  const [rsvpOpen, setRsvpOpen] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState(null);
 
-  useEffect(() => {
-    document.body.style.background = '';
-    document.body.style.color = '';
-    return () => { document.body.style.background = ''; };
-  }, []);
-
   return (
-    <div className="wedding-site">
-      <WeddingNav onRsvp={() => setRsvpOpen(true)} />
-      <Hero />
-      <Countdown />
+    <div className="wedding-v2">
+      <Cover />
+      <Promise />
       <Story />
+      <Countdown />
+      <VenueInfo />
+      <Timeline />
       <Gallery onLightbox={setLightboxSrc} />
-      <Venue />
-      <Faq />
-      <Footer />
-      {rsvpOpen && <RsvpModal onClose={() => setRsvpOpen(false)} />}
+      <Closing />
       <Lightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
     </div>
   );

@@ -16,7 +16,7 @@ const STORY_COPY = [
   '讓我們在手牽手一起走過下一個12年',
 ];
 
-export default function PromiseV2() {
+export default function Promise() {
   const photos = useWeddingMedia('site-top');
   return (
     <section className="wv2-promise">
@@ -33,4 +33,4 @@ export default function PromiseV2() {
     </section>
   );
 }
-import useWeddingMedia from '../../wedding/useWeddingMedia.js';
+import useWeddingMedia from '../useWeddingMedia.js';

@@ -25,7 +25,7 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 
 ## Verified in local Workers runtime
 
-- `/` and `/v2` SPA routes return 200.
+- `/` SPA route returns 200.
 - `/api/config` and `/api/backgrounds` return expected data.
 - Static photo-booth backgrounds return 200.
 - Upload returns 503 until the private R2 binding exists (expected safe failure).
@@ -34,7 +34,7 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 
 - Worker URL: `https://jim-camilla-wedding.shccgxqp.workers.dev`
 - The Worker has private `MEDIA` (R2) and `DB` (D1) bindings.
-- `/api/health`, `/api/config`, `/`, and `/v2` returned 200.
+- `/api/health`, `/api/config`, and `/` returned 200.
 - PNG upload to R2, secure `/photos/:token`, and `/view/:token` returned 200.
 - A byte-range request returned 206 with correct `Content-Range`; this is required for video streaming.
 - A chunked upload without `Content-Length` recorded the actual R2 object size in D1 correctly.
@@ -52,7 +52,7 @@ Add the returned bucket binding to `wrangler.jsonc` as `MEDIA`, then deploy agai
 
 | Feature | Cloudflare preview status | Evidence / next action |
 | --- | --- | --- |
-| Wedding pages (`/`, `/v2`) | Ready | Remote HTTP smoke test returned 200. |
+| Wedding page (`/`) | Ready | Remote HTTP smoke test returned 200. |
 | Photo-booth settings and frames | Ready | `/api/config`, `/api/backgrounds`, and static background assets returned 200. |
 | Local-device photo capture → storage | Ready to device-test | The browser posts composed image data to `/api/photos`; an end-to-end R2 upload and secure read test passed. |
 | Local-device video upload → storage | Ready to device-test | Uses the same `/api/photos` route. Byte-range reads returned 206, required for video playback. |

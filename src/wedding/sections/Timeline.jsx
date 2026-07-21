@@ -5,7 +5,7 @@ const EVENTS = [
   { time: '14:30 PM', label: '送客' },
 ];
 
-export default function TimelineV2() {
+export default function Timeline() {
   return (
     <section className="wv2-timeline">
       <div className="wv2-timeline-grid">

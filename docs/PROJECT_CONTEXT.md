@@ -11,8 +11,8 @@
 
 | 功能 | 位置 |
 | --- | --- |
-| 婚禮網站 | `src/wedding/`、`src/wedding-v2/` |
-| 路由 | `src/main.jsx`；`/`、`/v2`、`/photo-booth/*` |
+| 婚禮網站 | `src/wedding/` |
+| 路由 | `src/main.jsx`；`/`、`/photo-booth/*` |
 | 拍貼機流程 | `src/App.jsx`、`src/screens/CameraScreen.jsx` |
 | 拍照、相框合成、GIF、影片 | `src/camera.js`、`src/compose.js`、`src/gif.js`、`src/video.js` |
 | iPhone 遠端相機 | `src/remote/booth.js`、`src/screens/RemoteCameraPage.jsx` |

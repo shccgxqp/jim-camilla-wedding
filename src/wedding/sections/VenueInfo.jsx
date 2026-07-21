@@ -63,7 +63,7 @@ const ROWS = [
   },
 ];
 
-export default function VenueInfoV2() {
+export default function VenueInfo() {
   return (
     <section className="wv2-info">
       <div className="wv2-info-grid">

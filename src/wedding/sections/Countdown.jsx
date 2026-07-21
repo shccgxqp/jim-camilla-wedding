@@ -23,23 +23,15 @@ export default function Countdown() {
   }, []);
 
   return (
-    <section className="w-countdown-section">
-      <span className="w-kicker kicker">Time Until</span>
-      <h2 className="head">距離午餐還有</h2>
-      <p className="when">
-        2026.11.07
-        <span className="sep" />
-        Saturday
-        <span className="sep" />
-        Noon 12:00
-      </p>
-      <div className="w-countdown">
-        <div className="unit"><div className="num" ref={dRef}>000</div><div className="lbl">Days</div></div>
-        <div className="unit"><div className="num" ref={hRef}>00</div><div className="lbl">Hours</div></div>
-        <div className="unit"><div className="num" ref={mRef}>00</div><div className="lbl">Min</div></div>
-        <div className="unit"><div className="num" ref={sRef}>00</div><div className="lbl">Sec</div></div>
+    <section className="wv2-countdown">
+      <div className="wv2-countdown-kicker">[ 倒數計時 · WE  LOOK FORWARD TO SEEING YOU ]</div>
+      <div className="wv2-countdown-row">
+        <div className="wv2-countdown-unit"><span className="num" ref={dRef}>000</span><span className="lbl">Days</span></div>
+        <div className="wv2-countdown-unit"><span className="num" ref={hRef}>00</span><span className="lbl">Hours</span></div>
+        <div className="wv2-countdown-unit"><span className="num" ref={mRef}>00</span><span className="lbl">Min</span></div>
+        <div className="wv2-countdown-unit"><span className="num" ref={sRef}>00</span><span className="lbl">Sec</span></div>
       </div>
-      <p className="quip">他終於開口了 而她剛好沒事</p>
+      <p className="wv2-countdown-quip">這一年，這一天，希望您與我們相聚如初</p>
     </section>
   );
 }

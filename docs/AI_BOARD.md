@@ -6,6 +6,7 @@
 
 ## IN PROGRESS
 
+
 | STORY-005 | Reduce double-layer polaroid frame thickness while retaining a visible Story border | Codex | master | `src/wedding/wedding.css`, deployment | 2026-07-16 | DONE — build and diff check passed; deployed Worker `b0f55920-f425-4e9a-aa36-06bfe31f34ef`. Reduced total side/top white frame from 48px to 22px and reduced bottom frame spacing. |
 
 | STORY-004 | Make Story polaroid borders unmistakable, prevent desktop captions clipping, and lift mobile title | Codex | master | `src/wedding/wedding.css`, deployment | 2026-07-16 | DONE — build and diff check passed; deployed Worker `a6d0105d-6db2-4461-bf29-a5dbfab6fffb`. Added explicit 24px/58px white overlay frame, lifted desktop stack to 47%, and moved mobile title to the top safe area. |
@@ -56,6 +57,18 @@
 | DOC-001 | 維護共用協作文件 | Codex | `AGENTS.md`, `docs/**` | 規則與任務板保持同步、清楚且可執行 |
 
 ## DONE
+
+| CLEAN-002 | Codex | Consolidated the only wedding implementation and its public assets under canonical `src/wedding/` and `public/wedding/` directories, removing V2-only file names. | `npm.cmd run cf:deploy` passed; deployed Worker `a5caa49c-88aa-43cf-8035-8cbdc74d97ee` on 2026-07-21. |
+
+| CLEAN-001 | Codex | Consolidated V2 assets under `public/wedding-v2/`, removed an unused editor backup, and updated active route documentation. | `npm.cmd run cf:deploy` passed; deployed Worker `21e4d716-5e82-4a72-8ceb-6f79881ad9fc` on 2026-07-21. |
+
+| WEB-010 | Codex | Removed the laptop horizontal scrollbar by replacing the root `100vw` sizing and adding a root-level horizontal overflow guard. | Built and deployed Worker `a871c06e-7a67-4bbf-ba1d-266a0d0e359f`; verified at 1366px that the app uses the 1351px available width and horizontal scrolling is blocked. |
+
+| WEB-009 | Codex | Made V2 the sole wedding site at `/`, removed the V2 switch and retired V1 components and unused legacy static assets, and relocated the shared V2 modules. | `npm.cmd run build` passed; deployed Worker `8ab4cc0b-5c03-4aad-9bd4-8081d37192ae` on 2026-07-21. |
+
+| STORY-006 | Codex | Reserved bottom viewport space for Story cards, including the final “cheers to us!” caption, across desktop and medium viewports. | `npm.cmd run build` passed on 2026-07-21. |
+
+| WEB-008 | Codex | Matched the quote reference by colouring “you” and “home.” in deep blue while keeping the remaining words wine-red. | `npm.cmd run build` passed on 2026-07-21. |
 
 | WEB-007 | Codex | Published the Photo Wall quote update to GitHub and the production Cloudflare Worker. | Built successfully; deployed Worker version `6754b92a-3892-4e58-883b-54bb57247afc` on 2026-07-21. |
 

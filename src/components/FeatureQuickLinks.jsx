@@ -2,7 +2,6 @@ import './feature-quick-links.css';
 
 const LINKS = [
   { label: '正式首頁', href: '/', hint: '主婚禮網站' },
-  { label: '新版頁面', href: '/v2', hint: '版型預覽' },
   { label: '拍貼機', href: '/photo-booth', hint: '賓客拍照入口' },
   { label: '遠端相機', href: '/photo-booth/camera', hint: '手機鏡頭連線' },
   { label: '照片管理', href: '/photo-booth/gallery', hint: '拍貼成品管理' },

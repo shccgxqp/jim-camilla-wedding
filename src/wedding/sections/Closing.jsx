@@ -1,5 +1,5 @@
 import FeatureQuickLinks from '../../components/FeatureQuickLinks.jsx';
-import useWeddingMedia from '../../wedding/useWeddingMedia.js';
+import useWeddingMedia from '../useWeddingMedia.js';
 
 const DOVES = (
   <svg className="wv2-closing-dove" viewBox="0 0 100 50" fill="none" aria-hidden="true">
@@ -16,7 +16,7 @@ const DOVES = (
   </svg>
 );
 
-export default function ClosingV2() {
+export default function Closing() {
   const photos = useWeddingMedia('site-top');
   return (
     <section className="wv2-closing">
