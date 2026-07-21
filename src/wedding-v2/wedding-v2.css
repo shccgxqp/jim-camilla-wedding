@@ -106,6 +106,7 @@
 .wedding-v2 .w-gallery{padding:120px 32px;background:var(--v2-cream-2)}
 .wedding-v2 .w-gallery .w-container{width:min(1080px,100%);margin-inline:auto}
 .wedding-v2 .w-gallery .w-section-head{margin-inline:auto}
+.wedding-v2 .w-gallery .w-gallery-quote{color:var(--v2-red-deep)}
 .wedding-v2 .w-bot-grid{width:100%;margin-inline:auto}
 .wv2-info-table dl{display:flex;flex-direction:column}
 .wv2-info-row{padding:22px 0;border-bottom:1px solid var(--v2-rule)}

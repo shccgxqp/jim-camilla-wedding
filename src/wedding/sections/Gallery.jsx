@@ -36,7 +36,7 @@ export default function Gallery({ onLightbox }) {
         <div className="w-section-head w-fade">
           <span className="w-kicker">Souvenirs</span>
           <h2>相片牆</h2>
-          <p className="sub">為了寫這幾行字 · 我們翻了 4,217 張照片</p>
+          <p className="w-gallery-quote">finding you was like<br />coming home.</p>
           <div className="w-rule-line"><span className="orn">❀</span></div>
         </div>
         <div className="w-bot-grid" data-count={items.length}>

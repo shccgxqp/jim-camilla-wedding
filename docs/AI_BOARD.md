@@ -6,6 +6,8 @@
 
 ## IN PROGRESS
 
+| WEB-007 | Publish the current Photo Wall quote update to GitHub and the production Cloudflare Worker | Codex | master | Current WEB-006 changes, GitHub, Cloudflare deployment | 2026-07-21 | IN PROGRESS |
+
 | STORY-005 | Reduce double-layer polaroid frame thickness while retaining a visible Story border | Codex | master | `src/wedding/wedding.css`, deployment | 2026-07-16 | DONE — build and diff check passed; deployed Worker `b0f55920-f425-4e9a-aa36-06bfe31f34ef`. Reduced total side/top white frame from 48px to 22px and reduced bottom frame spacing. |
 
 | STORY-004 | Make Story polaroid borders unmistakable, prevent desktop captions clipping, and lift mobile title | Codex | master | `src/wedding/wedding.css`, deployment | 2026-07-16 | DONE — build and diff check passed; deployed Worker `a6d0105d-6db2-4461-bf29-a5dbfab6fffb`. Added explicit 24px/58px white overlay frame, lifted desktop stack to 47%, and moved mobile title to the top safe area. |
@@ -56,6 +58,8 @@
 | DOC-001 | 維護共用協作文件 | Codex | `AGENTS.md`, `docs/**` | 規則與任務板保持同步、清楚且可執行 |
 
 ## DONE
+
+| WEB-006 | Codex | Replaced the Photo Wall subtitle with the supplied two-line quote, styled in a wine-red italic at a title-comparable responsive size. | `npm.cmd run build` and `git diff --check` passed on 2026-07-21. |
 
 | ID | Owner | 結果 | 驗證 |
 | --- | --- | --- | --- |

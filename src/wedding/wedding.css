@@ -157,6 +157,7 @@
 .w-section-head .w-kicker{margin-bottom:18px;display:block}
 .w-section-head h2{font-family:var(--display);font-style:italic;font-weight:500;font-size:clamp(48px,9vw,108px);color:var(--ink);line-height:.95;letter-spacing:-.02em}
 .w-section-head .sub{font-family:var(--display);font-size:20px;color:var(--ink-soft);margin-top:18px;font-style:italic}
+.w-section-head .w-gallery-quote{font-family:var(--display);font-size:clamp(34px,7vw,84px);font-style:italic;font-weight:500;line-height:.9;letter-spacing:-.04em;color:#8e3b3b;margin-top:22px}
 .w-rule-line{display:flex;align-items:center;gap:14px;color:var(--champagne-dark);max-width:280px;margin:28px auto 0}
 .w-rule-line::before,.w-rule-line::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--champagne-dark) 30%,var(--champagne-dark) 70%,transparent)}
 .w-rule-line .orn{font-family:var(--serif);font-style:italic;font-size:18px;color:var(--champagne-dark)}
